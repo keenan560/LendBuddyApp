@@ -1,63 +1,100 @@
-import React, { useState } from "react";
+// @refresh state
+import React, { useState, useEffect, useContext } from "react";
 import { StyleSheet, Text, View, TextInput } from "react-native";
 import { Button } from "react-native-elements";
-import { auth } from "../firebase";
+import * as firebase from "firebase";
+import UserContext from "./context/userContext";
+
+// Optionally import the services that you want to use
+import "firebase/auth";
+// import "firebase/database";
+import "firebase/firestore";
+//import "firebase/functions";
+//import "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 function Login({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const value = useContext(UserContext);
 
   const signIn = (event) => {
-    event.preventDefault();
-    // setLoading(true);
-    // auth
-    //   .signInWithEmailAndPassword(email, password)
-    //   .then((authUser) => {
-    //     navigation.navigate("Dashboard", { name: "Dashboard" });
-    //   })
-
-    //   .catch((error) => {
-    //     alert(error.message);
-    //     setLoading(false);
-    //   });
-       navigation.navigate("Dashboard", { name: "Dashboard" });
+    setLoading(true);
+    firebase
+      .auth()
+      .signInWithEmailAndPassword(email, password)
+      .then((user) => {
+        // Signed in
+        // ...
+        value.login(user);
+        // alert("Welcome " + user.user.email);
+        setTimeout(() => {
+          setLoading(false);
+          navigation.navigate("Dashboard", { name: "Dashboard" });
+        }, 1000);
+      })
+      .catch((error) => {
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        alert(errorMessage);
+        setLoading(false);
+      });
   };
-  console.log([email, password]);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
-        lend<Text style={styles.lendColor}>$$</Text>Buddy
-      </Text>
-      <Text style={styles.slogan}>Spot a Friend</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        textContentType="emailAddress"
-        keyboardType="email-address"
-        clearTextOnFocus
-        onChangeText={(text) => setEmail(text.trim())}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        textContentType="password"
-        secureTextEntry
-        clearTextOnFocus
-        onChangeText={(text) => setPassword(text.trim())}
-      />
-      <Button
-        buttonStyle={styles.button}
-        title="Sign In"
-        type="solid"
-        onPress={signIn}
-        loading={loading}
-      />
-      <View style={styles.row}>
-        <Text style={styles.left}>Forgot Username</Text>
-        <Text style={styles.right}>Forgot Password</Text>
-      </View>
-    </View>
+    <UserContext.Consumer>
+      {(context) => (
+        <View style={styles.container}>
+          <Text style={styles.title}>
+            lend<Text style={styles.lendColor}>$$</Text>Buddy
+          </Text>
+          <Text style={styles.slogan}>Spot a Friend</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            textContentType="emailAddress"
+            keyboardType="email-address"
+            clearTextOnFocus
+            onChangeText={(text) => setEmail(text.trim())}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            textContentType="password"
+            secureTextEntry
+            clearTextOnFocus
+            onChangeText={(text) => setPassword(text.trim())}
+          />
+          <Button
+            buttonStyle={styles.button}
+            title="Login"
+            type="solid"
+            onPress={signIn}
+            loading={loading}
+          />
+          <View style={styles.row}>
+            <Text style={styles.left}>Forgot Username</Text>
+            <Text style={styles.right}>Forgot Password</Text>
+          </View>
+        </View>
+      )}
+    </UserContext.Consumer>
   );
 }
 

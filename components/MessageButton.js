@@ -8,7 +8,7 @@ function MessageButton() {
       style={{
         flex: 0.2,
         borderRadius: 50,
-        backgroundColor: "gray",
+        backgroundColor: "#3FADC1",
         padding: 12,
       }}
     >

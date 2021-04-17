@@ -6,6 +6,7 @@ import { PricingCard } from "react-native-elements";
 
 function Debt({
   id,
+  status,
   lender,
   amountBorrowed,
   amountOwed,
@@ -13,24 +14,36 @@ function Debt({
   nextPaymentDate,
   cb,
 }) {
+  // const statusColor = status => {
+  //   if (status !== "Late")  {
+  //     return "red"
+  //   }
+  // }
+
+  const requestExt = () => {};
+
   return (
     <View style={styles.container}>
-      <Text>
+      <View>
         <PricingCard
-          color={"#3D5F9C"}
+          color={status !== "late" ? "#3D5F9C" : "red"}
           cb={cb}
           title={lender}
           price={`$${amountOwed}`}
           info={[
-            "Due: " + nextPaymentDate,
+            "Due: " + new Date(nextPaymentDate?.toDate()).toLocaleString(),
             "Loan Amount: $" + amountBorrowed,
             "Percent Paid:" +
               Math.ceil(amountBorrowed - amountOwed) / amountBorrowed,
           ]}
-          button={{ title: "Make Payment", icon: "payment" }}
+          button={{
+            title: status !== "late" ? "Make Payment" : " Request Extension",
+            icon: status !== "late" ? "payment" : "access-time",
+          }}
           containerStyle={{ width: 375 }}
+          onButtonPress={status === "late" && requestExt}
         />
-      </Text>
+      </View>
     </View>
   );
 }
@@ -39,6 +52,7 @@ export default Debt;
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     marginBottom: 30,
     marginTop: 5,
   },

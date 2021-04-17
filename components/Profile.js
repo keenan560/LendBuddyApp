@@ -1,18 +1,9 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
-import { Card, ListItem, Button, Avatar } from "react-native-elements";
+import { View, ScrollView } from "react-native";
+import { Card, ListItem, Button } from "react-native-elements";
 import * as DocumentPicker from "expo-document-picker";
 import Icon from "react-native-vector-icons/FontAwesome";
-// Name
-// Photo (optional)
-// Address
-// State
-// Zip
-// Phone
-// Bank Name
-// Bank Account Number
-// Bank Routing Number
-// File picker for upload
+
 const details = {
   firstName: "John",
   lastName: "Smith",

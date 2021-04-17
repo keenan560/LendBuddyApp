@@ -14,38 +14,51 @@ function Debtors({ navigation }) {
     {
       id: 0,
       borrower: "Gabriel",
-      amountBorrowed: 500,
-      amountOwed: 114.71,
+      amountBorrowed: 150,
+      amountOwed: 86.63,
       originDate: "11/3/2020",
       nextPaymentDue: "12/3/2020",
       status: "Good",
     },
     {
-      id: 0,
+      id: 1,
       borrower: "Aston",
-      amountBorrowed: 1000,
-      amountOwed: 890.44,
+      amountBorrowed: 250,
+      amountOwed: 144.38,
       originDate: "10/4/2020",
       nextPaymentDue: "11/4/2020",
       status: "Default",
     },
     {
-      id: 0,
+      id: 2,
       borrower: "Lucy",
       amountBorrowed: 50,
-      amountOwed: 29.88,
+      amountOwed: 28.88,
       originDate: "11/3/2020",
       nextPaymentDue: "12/3/2020",
       status: "Extension",
     },
+    // {
+    //   id: 2,
+    //   borrower: "Maggie",
+    //   amountBorrowed: 125,
+    //   amountOwed: 86,
+    //   originDate: "11/3/2020",
+    //   nextPaymentDue: "Yesterday",
+    //   status: "Late",
+    // },
   ];
   let debtTotal = 0;
   const total = debts.map((debt) => (debtTotal += debt.amountOwed));
 
+  function currencyFormat(num) {
+    return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView>
-        <Text h4>Total Spotted: ${debtTotal.toFixed(2)}</Text>
+        <Text h4>Total Spotted: {currencyFormat(debtTotal)}</Text>
         <Text>Buddies: {debts.length}</Text>
         {debts.map((debt, index) => (
           <Debtor
@@ -56,6 +69,7 @@ function Debtors({ navigation }) {
             originDate={debt.originDate}
             nextPaymentDate={debt.nextPaymentDue}
             status={debt.status}
+            navigation={navigation}
           />
         ))}
       </ScrollView>
@@ -65,6 +79,7 @@ function Debtors({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",

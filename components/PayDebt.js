@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   ScrollView,
@@ -10,112 +10,104 @@ import {
 import { Text, Button, Input } from "react-native-elements";
 import Icon from "react-native-vector-icons/FontAwesome";
 import Debt from "./Debt";
+import UserContext from "./context/userContext";
+import * as firebase from "firebase";
+
+// Optionally import the services that you want to use
+import "firebase/auth";
+// import "firebase/database";
+import "firebase/firestore";
+//import "firebase/functions";
+//import "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 function PayDebt({ navigation }) {
-  const debts = [
-    {
-      id: 0,
-      lender: "Peter",
-      amountBorrowed: 50,
-      amountOwed: 30.45,
-      originDate: "11/3/2020",
-      nextPaymentDue: "12/3/2020",
-    },
-    {
-      id: 0,
-      lender: "Michael",
-      amountBorrowed: 100,
-      amountOwed: 19.12,
-      originDate: "10/4/2020",
-      nextPaymentDue: "11/4/2020",
-    },
-    {
-      id: 0,
-      lender: "Amber",
-      amountBorrowed: 250,
-      amountOwed: 167.78,
-      originDate: "11/3/2020",
-      nextPaymentDue: "12/3/2020",
-    },
-    {
-      id: 0,
-      lender: "Colin",
-      amountBorrowed: 75,
-      amountOwed: 30.45,
-      originDate: "11/3/2020",
-      nextPaymentDue: "12/3/2020",
-    },
-  ];
-  let debtTotal = 0;
-  const total = debts.map((debt) => (debtTotal += debt.amountOwed));
+  const value = useContext(UserContext);
+  const [user, setUser] = useState(null);
+  const [id, setId] = useState([]);
+  const [debts, setDebts] = useState([]);
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const getDocId = async () => {
+    await firebase
+      .firestore()
+      .collection("users")
+      .where("email", "==", `${value.user.user.email}`)
+      .get()
+      .then(function (querySnapshot) {
+        querySnapshot.forEach(function (doc) {
+          // doc.data() is never undefined for query doc snapshots
+          console.log(doc.id, " => ", doc.data());
+          setId(doc.id);
+        });
+      })
+      .catch(function (error) {
+        console.log("Error getting documents: ", error);
+      });
 
-  console.log(modalVisible);
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${id}`)
+      .collection("debts")
+      .orderBy("lender", "asc")
+      .onSnapshot((snapshot) =>
+        setDebts(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        )
+      );
+  };
+
+  useEffect(() => {
+    getDocId();
+  }, [id]);
+
+  const totalDebt = (debts) => {
+    let total = 0;
+    for (let i = 0; i < debts.length; i++) {
+      total += parseInt(debts[i].data.amountOwed);
+    }
+
+    return total;
+  };
   return (
     <View style={styles.container}>
+      <Text h4>Total Debt: ${debts.length > 0 ? totalDebt(debts) : 0}</Text>
+      <Text>Buddies:{debts ? debts.length : 0}</Text>
       <ScrollView>
-        <Text h4>Total Debt: ${debtTotal.toFixed(2)}</Text>
-        <Text>Buddies: {debts.length}</Text>
-        {debts.map((debt, index) => (
-          <View>
-            <Debt
-              key={index}
-              lender={debt.lender}
-              amountBorrowed={debt.amountBorrowed}
-              amountOwed={debt.amountOwed}
-              originDate={debt.originDate}
-              nextPaymentDate={debt.nextPaymentDue}
-            />
-            {/* <TouchableHighlight
-              style={styles.openButton}
-              onPress={() => {
-                setModalVisible(true);
-              }}
-            >
-              <Text style={styles.textStyle}>Make Payment</Text>
-            </TouchableHighlight>
-            */}
-          </View>
-        ))}
-        <View style={styles.centeredView}>
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => {
-              Alert.alert("Modal has been closed.");
-            }}
-          >
-            <View style={styles.centeredView}>
-              <View style={styles.modalView}>
-                {/* <Text style={styles.modalText}>Hello World!</Text> */}
-                <Input
-                  placeholder="Enter Amount"
-                  rightIcon={{ type: "font-awesome", name: "dollar" }}
-                />
-
-                <TouchableHighlight
-                  style={{ ...styles.openButton, backgroundColor: "#2196F3" }}
-                  onPress={() => {
-                    setModalVisible(!modalVisible);
-                  }}
-                >
-                  <Text style={styles.textStyle}>Submit</Text>
-                </TouchableHighlight>
-              </View>
+        {debts.length ? (
+          debts.map(({ id, data }) => (
+            <View>
+              <Debt
+                key={id}
+                lender={data.lender}
+                amountBorrowed={data.amountBorrowed}
+                amountOwed={data.amountOwed}
+                originDate={data.originDate}
+                nextPaymentDate={data.nextPaymentDue}
+                status={data.status}
+              />
             </View>
-          </Modal>
-
-          <TouchableHighlight
-            style={styles.openButton}
-            onPress={() => {
-              setModalVisible(true);
-            }}
-          >
-            <Text style={styles.textStyle}>Show Modal</Text>
-          </TouchableHighlight>
-        </View>
+          ))
+        ) : (
+          <Text>No debts</Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -126,6 +118,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
+    flex: 1,
   },
   centeredView: {
     flex: 1,
@@ -147,7 +140,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    width: 375
+    width: 375,
   },
   openButton: {
     backgroundColor: "#F194FF",

@@ -1,9 +1,10 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useRef } from "react";
+import { StyleSheet, Text, View, Animated } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { AntDesign } from "@expo/vector-icons";
+
 
 function BorrowerDash({ navigation }) {
   return (
@@ -11,18 +12,17 @@ function BorrowerDash({ navigation }) {
       <View style={styles.container}>
         <View style={styles.row}>
           <View style={styles.iconSpace}>
-            {/* <MaterialIcons name="message" size={60} color="#28a745" /> */}
             <MaterialIcons
-              name="chat-bubble-outline"
+              name="shopping-cart"
               size={60}
               color="#28a745"
               onPress={() =>
-                navigation.navigate("Messages", {
-                  name: "Messages",
+                navigation.navigate("Discounts", {
+                  name: "Discounts",
                 })
               }
             />
-            <Text style={styles.iconText}>Messages</Text>
+            <Text style={styles.iconText}>Discounts</Text>
           </View>
           <View style={styles.iconSpace}>
             <MaterialIcons
@@ -38,7 +38,16 @@ function BorrowerDash({ navigation }) {
             <Text style={styles.iconText}>Borrow</Text>
           </View>
           <View style={styles.iconSpace}>
-            <MaterialIcons name="history" size={60} color="#28a745" />
+            <MaterialIcons
+              name="history"
+              size={60}
+              color="#28a745"
+              onPress={() =>
+                navigation.navigate("Borrower Activity", {
+                  name: "Borrower Activity",
+                })
+              }
+            />
             <Text style={styles.iconText}>Activity</Text>
           </View>
           <View style={styles.iconSpace}>
@@ -66,7 +75,16 @@ function BorrowerDash({ navigation }) {
             <Text style={styles.iconText}>Profile</Text>
           </View>
           <View style={styles.iconSpace}>
-            <MaterialIcons name="payment" size={60} color="#28a745" />
+            <MaterialIcons
+              name="payment"
+              size={60}
+              color="#28a745"
+              onPress={() =>
+                navigation.navigate("Borrower Card Info", {
+                  name: "Borrower Card Info",
+                })
+              }
+            />
             <Text style={styles.iconText}>Card Info</Text>
           </View>
           <View style={styles.iconSpace}>
@@ -90,7 +108,12 @@ function BorrowerDash({ navigation }) {
         </View>
         <View style={styles.row}>
           <View style={styles.iconSpace}>
-            <FontAwesome name="search" size={60} color="#28a745" />
+            <FontAwesome
+              name="search"
+              size={60}
+              color="#28a745"
+              onPress={() => navigation.navigate("Search", { name: "Search" })}
+            />
             <Text style={styles.iconText}>Search</Text>
           </View>
         </View>

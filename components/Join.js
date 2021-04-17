@@ -1,4 +1,3 @@
-import { auth } from "../firebase";
 import React, { useState } from "react";
 import {
   StyleSheet,
@@ -7,7 +6,29 @@ import {
   TextInput,
   TouchableOpacity,
 } from "react-native";
-import database from "../firebase";
+import * as firebase from "firebase";
+
+// Optionally import the services that you want to use
+import "firebase/auth";
+// import "firebase/database";
+import "firebase/firestore";
+//import "firebase/functions";
+//import "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 function Join({ navigation }) {
   const [firstName, setFirstName] = useState("");
@@ -19,12 +40,32 @@ function Join({ navigation }) {
 
   const signUp = (event) => {
     event.preventDefault();
-    auth
+    firebase
+      .auth()
       .createUserWithEmailAndPassword(email, password)
       .then((authUser) => {
-        return authUser.user.updateProfile({
-          displayName: email,
+        authUser.user.updateProfile({
+          email: authUser.user.email,
+          firstName: firstName,
+          lastName: lastName,
+          dob: dob,
+          mobile: mobile,
         });
+
+        firebase
+          .firestore()
+          .collection("users")
+          .add({
+            id: authUser.user.uid,
+            email: authUser.user.email,
+            firstName: firstName,
+            lastName: lastName,
+            dob: dob,
+            mobile: mobile,
+          })
+          .catch((error) => alert(error.message));
+        alert("Please Login" + authUser.user.firstName);
+        navigation.navigate("Login");
       })
       .catch((error) => alert(error.message));
     setFirstName("");

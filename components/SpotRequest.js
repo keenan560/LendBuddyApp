@@ -1,35 +1,46 @@
-import React from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  TextInput,
-} from "react-native";
+import React, { useContext } from "react";
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { Input } from "react-native-elements";
 import { useState } from "react";
 import { Picker } from "@react-native-picker/picker";
+import { Slider } from "react-native-elements";
+import { SpotRequestContext } from "../App";
 
 function SpotRequest({ navigation }) {
-  const [moneyInput, setMoneyInput] = useState("");
+  const [moneyInput, setMoneyInput] = useState(10);
   const [categoryInput, setCategoryInput] = useState("");
-  console.log(moneyInput);
+  const requestContext = useContext(SpotRequestContext);
+
+  const findBuddy = () => {
+    requestContext.requestDispatch({
+      type: "request",
+      payload: { amount: moneyInput, category: categoryInput },
+    });
+    navigation.navigate("Finding Buddy", {
+      name: "Finding Buddy",
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
         Spot<Text style={styles.lendColor}>$$</Text>Request
       </Text>
       <Text style={styles.slogan}>Please select the details below</Text>
-      <TextInput
+
+      <Input
         style={styles.input}
-        placeholder="Amount (whole dollars only)"
-        textContentType="creditCardNumber"
+        placeholder="Amount i.e. 50"
         value={parseInt(moneyInput)}
         onChangeText={(text) => setMoneyInput(parseInt(text))}
         clearTextOnFocus
-        blurOnSubmit
-        keyboardType="number-pad"
+        maxLength={3}
+        keyboardType="numbers-and-punctuation"
+        returnKeyType="default"
+        errorMessage="Enter whole numbers from 10 to 250"
+        errorStyle={{ textAlign: "center" }}
       />
-      <Text>Range of $10 t0 $250</Text>
+
       {/* <Picker
         selectedValue={moneyInput}
         style={{
@@ -46,12 +57,14 @@ function SpotRequest({ navigation }) {
         <Picker.Item label="Select amount" value={null} />
         <Picker.Item label="$10.00" value={10} />
         <Picker.Item label="$20.00" value={20} />
-        <Picker.Item label="$30.00" value={30} />
-        <Picker.Item label="$40.00" value={40} />
-
- 
+        <Picker.Item label="$50.00" value={50} />
+        <Picker.Item label="$75.00" value={75} />
+        <Picker.Item label="$100.00" value={100} />
+        <Picker.Item label="$150.00" value={150} />
+        <Picker.Item label="$200.00" value={200} />
+        <Picker.Item label="$225.00" value={225} />
+        <Picker.Item label="$250.00" value={250} />
       </Picker> */}
-
       <Picker
         selectedValue={categoryInput}
         style={{ height: 50, width: 350 }}
@@ -60,27 +73,22 @@ function SpotRequest({ navigation }) {
         onValueChange={(itemValue, itemIndex) => setCategoryInput(itemValue)}
       >
         <Picker.Item label="Please select the reason" value={null} />
-        <Picker.Item label="Food & Dining" value="food" />
-        <Picker.Item label="Movies" value="movies" />
-        <Picker.Item label="Clothes" value="clothes" />
-        <Picker.Item label="Education" value="education" />
-        <Picker.Item label="Personal Care" value="personal_care" />
-        <Picker.Item label="Auto & Transport" value="auto_transport" />
-        <Picker.Item label="Fees" value="fees" />
-        <Picker.Item label="Taxes" value="taxes" />
+        <Picker.Item label="Food & Dining" value="Food & Dining" />
+        <Picker.Item label="Movies" value="Movies" />
+        <Picker.Item label="Pay Bills" value="Bill Payment" />
+        <Picker.Item label="Clothes" value="Clothes" />
+        <Picker.Item label="Education" value="Education" />
+        <Picker.Item label="Personal Care" value="Personal Care" />
+        <Picker.Item label="Auto & Transport" value="Auto Transport" />
+        <Picker.Item label="Fees" value="Fees" />
+        <Picker.Item label="Taxes" value="Taxes" />
       </Picker>
       {moneyInput > 9 &&
       moneyInput <= 250 &&
       typeof moneyInput === "number" &&
+      moneyInput.toString().indexOf(".") < 0 &&
       categoryInput ? (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() =>
-            navigation.navigate("Finding Buddy", {
-              name: "Finding Buddy",
-            })
-          }
-        >
+        <TouchableOpacity style={styles.button} onPress={findBuddy}>
           <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
       ) : (

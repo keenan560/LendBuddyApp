@@ -109,6 +109,7 @@ function Chat({ navigation, name }) {
             {message.from === "sender" && (
               <Avatar
                 rounded
+                placeholderStyle={{ backgroundColor: "#B2B2B2" }}
                 size={38}
                 source={{ uri: chats[0].name[0] }}
                 title="SD"
@@ -150,18 +151,17 @@ function Chat({ navigation, name }) {
           padding: 8,
           marginRight: 5,
           marginLeft: 5,
+          width: "100%",
         }}
       >
         <TextInput
           style={styles.input}
           placeholder="Enter message"
-          placeholderTextColor="gray"
           onChangeText={(text) => setMessage(text)}
           value={message}
+          placeholderTextColor="#000000"
         />
-        <Text>
-          <MessageButton />
-        </Text>
+        <Text>{message && <MessageButton />}</Text>
       </View>
     </View>
   );
@@ -205,12 +205,12 @@ const styles = StyleSheet.create({
   },
   senderBackground: {
     borderRadius: 20,
-    backgroundColor: "#3D5F9C",
+    backgroundColor: "#4CA64C",
     maxWidth: "50%",
   },
   receiverBackground: {
     borderRadius: 20,
-    backgroundColor: "gray",
+    backgroundColor: "#B2B2B2",
     maxWidth: "50%",
   },
   button: {
@@ -225,12 +225,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     marginTop: 15,
     height: 50,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderTopColor: "gray",
     borderBottomColor: "gray",
     borderRightColor: "gray",
     borderLeftColor: "gray",
     borderRadius: 20,
-    backgroundColor: "#fff",
   },
 });

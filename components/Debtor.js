@@ -1,17 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { Avatar, Button } from "react-native-elements";
 import { MaterialIcons } from "@expo/vector-icons";
 import { PricingCard } from "react-native-elements";
+import { FontAwesome } from "@expo/vector-icons";
 
 function Debtor({
+  navigation,
   borrower,
   amountBorrowed,
-  amountOwed,
+  amountOwed, 
   originDate,
   nextPaymentDate,
   status,
 }) {
+  const [claim, setClaim] = useState(false);
+  const [claimStatus, setClaimStatus] = useState(false);
   const statusColor = (status) => {
     if (status === "Good") {
       return "#28a745";
@@ -27,21 +31,46 @@ function Debtor({
   };
   return (
     <View style={styles.container}>
-      <Text>
-        <PricingCard
-          color={statusColor(status)}
-          title={borrower}
-          price={`$${amountOwed}`}
-          info={[
-            "Due: " + nextPaymentDate,
-            "Loan Amount: $" + amountBorrowed,
-            "Percent Paid:" +
-              Math.ceil(amountBorrowed - amountOwed) / amountBorrowed,
-          ]}
-          button={{ title: status, icon: "attach-money" }}
-          containerStyle={{ width: 375 }}
-        />
-      </Text>
+      <PricingCard
+        color={(claimStatus && "gray") || statusColor(status)}
+        title={borrower}
+        price={`$${amountOwed}`}
+        info={[
+          "Due: " + nextPaymentDate,
+          "Loan Amount: $" + amountBorrowed,
+          "Percent Paid:" +
+            parseFloat(
+              ((amountBorrowed - amountOwed) / amountBorrowed) * 100
+            ).toFixed(0) +
+            "%",
+        ]}
+        button={{
+          title:
+            (claimStatus === true && "Claim Filed") ||
+            (status === "Good" && "Good") ||
+            (status === "Extension" && "Extentsion") ||
+            (status === "Default" && "File a Claim "),
+
+          icon:
+            (claimStatus && "check-circle") ||
+            (status === "Good" && "attach-money") ||
+            (status === "Extension" && "access-time") ||
+            (status === "Default" && "gavel"),
+          disabled: claimStatus ? true : false,
+
+          onPress: () => {
+            if (status === "Default") {
+              setClaim(true);
+              setTimeout(() => {
+                setClaim(false), setClaimStatus(true);
+              }, 2000);
+            }
+          },
+
+          loading: claim ? true : false,
+        }}
+        containerStyle={{ width: 375 }}
+      />
     </View>
   );
 }
@@ -52,6 +81,7 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 30,
     marginTop: 5,
+    flex: 1,
   },
   title: {
     color: "#28a745",

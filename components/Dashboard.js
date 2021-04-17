@@ -1,17 +1,81 @@
-import React from "react";
-import { StyleSheet, Text, View, Switch } from "react-native";
+import React, { useEffect, useContext } from "react";
+import { StyleSheet, Text, View, Switch, Alert } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { Avatar, Accessory, Header, Divider } from "react-native-elements";
+import { Avatar } from "react-native-elements";
 import { useState } from "react";
 import BorrowerDash from "./BorrowerDash";
 import LenderDash from "./LenderDash";
 import { AntDesign } from "@expo/vector-icons";
+import UserContext from "./context/userContext";
+
+import * as firebase from "firebase";
+
+// Optionally import the services that you want to use
+import "firebase/auth";
+import "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 function Dashboard({ navigation }) {
+  const value = useContext(UserContext);
+  const [user, setUser] = useState(null);
   const [switchValue, setSwitchValue] = useState(false);
   const toggleSwitch = (value) => {
     setSwitchValue(value);
   };
+
+  useEffect(() => {
+    firebase
+      .firestore()
+      .collection("users")
+      .where("email", "==", `${value.user.user.email}`)
+      .get()
+      .then(function (querySnapshot) {
+        querySnapshot.forEach(function (doc) {
+          // doc.data() is never undefined for query doc snapshots
+          setUser(doc.data());
+          // console.log(doc.id, " => ", doc.data());
+        });
+      });
+  }, []);
+
+  
+
+  // console.log(value.user);
+
+  const logOut = () =>
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to sign out?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => console.log("Cancel Pressed"),
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => {
+            firebase.auth().signOut();
+            navigation.navigate("Login", { name: "Login" });
+          },
+        },
+      ],
+      { cancelable: false }
+    );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -21,10 +85,11 @@ function Dashboard({ navigation }) {
             <Avatar
               size={35}
               rounded
-              title="KM"
+              title={user ? `${user.firstName[0] + user.lastName[0]}` : ".."}
               source={{
-                uri: "KM",
+                uri: user ? `${user.firstName[0] + user.lastName[0]}` : "..",
               }}
+              onPress={logOut}
             ></Avatar>
           </View>
 
@@ -33,6 +98,7 @@ function Dashboard({ navigation }) {
             onValueChange={toggleSwitch}
             value={switchValue}
           />
+
           <View>
             {switchValue ? (
               <Text style={styles.portalSwitch}>Lender</Text>
@@ -50,7 +116,7 @@ function Dashboard({ navigation }) {
                 <AntDesign name="star" size={10} color="gold" />
               </View>
               <View style={styles.ratingSpace}>
-                <AntDesign name="star" size={10}  color="gold" />
+                <AntDesign name="star" size={10} color="gold" />
               </View>
             </View>
           </View>
@@ -64,11 +130,15 @@ function Dashboard({ navigation }) {
         <View style={styles.row}>
           {switchValue ? (
             <Text style={styles.dashTitle}>
-              <Text style={styles.spotColor}>$1,053.03</Text>
+              <Text style={styles.spotColor}>
+                ${user && user.totalLent ? user.totalLent : 0}
+              </Text>
             </Text>
           ) : (
             <Text style={styles.dashTitle}>
-              <Text style={styles.oweColor}>$247.80</Text>
+              <Text style={styles.oweColor}>
+                ${user && user.totalDebt ? user.totalDebt : 0}
+              </Text>
             </Text>
           )}
         </View>
@@ -132,7 +202,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     padding: 15,
   },
-  
+
   lendColor: {
     color: "#28a745",
     borderRightColor: "gray",
