@@ -67,8 +67,7 @@ function PayDebt({ navigation }) {
       .onSnapshot((snapshot) =>
         setDebts(
           snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
+            
           }))
         )
       );

@@ -1,16 +1,43 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { StyleSheet, View, Animated } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { Text, Button, Overlay, ListItem, Avatar } from "react-native-elements";
-import * as Svg from "react-native-svg";
 import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
+import * as Location from "expo-location";
+import UserContext from "./context/userContext";
+import * as firebase from "firebase";
+
+// Optionally import the services that you want to use
+import "firebase/auth";
+// import "firebase/database";
+import "firebase/firestore";
+//import "firebase/functions";
+//import "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 function LenderDash({ navigation }) {
   const [active, setActive] = useState(false);
-
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [visible, setVisible] = useState(false);
+
+  const value = useContext(UserContext);
 
   useEffect(() => {
     if (active) {
@@ -27,6 +54,25 @@ function LenderDash({ navigation }) {
   const toggleActive = () => {
     setActive(!active);
   };
+
+  const getCoords = async () => {
+    setActive(true);
+    let location = await Location.getCurrentPositionAsync({});
+    setLocation(location);
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.user.user.uid}`)
+      .update({
+        activeLender: true,
+        coordinates: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        },
+      });
+  };
+  console.log(value.user.user.uid);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View>
@@ -137,7 +183,7 @@ function LenderDash({ navigation }) {
                 name="sync-disabled"
                 size={60}
                 color="#3D5F9C"
-                onPress={() => setActive(true)}
+                onPress={getCoords}
               />
             ) : (
               <FontAwesome
@@ -149,7 +195,7 @@ function LenderDash({ navigation }) {
                 }}
               />
             )}
-            {active == false ? (
+            {active === false ? (
               <Text style={styles.iconText}>Go Online</Text>
             ) : (
               <Text style={styles.iconText}>Go Offline</Text>

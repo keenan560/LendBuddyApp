@@ -7,50 +7,36 @@ import { Rating, Button, Overlay } from "react-native-elements";
 import MakeItRain from "react-native-make-it-rain";
 import UserContext from "./context/userContext";
 import { SpotRequestContext } from "../App";
+import * as firebase from "firebase";
+
+// Optionally import the services that you want to use
+import "firebase/auth";
+// import "firebase/database";
+import "firebase/firestore";
+//import "firebase/functions";
+//import "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 export default function BorrowMap({ navigation }) {
   const requestContext = useContext(SpotRequestContext);
 
   console.log(requestContext.requestState);
 
-  const lenders = [
-    {
-      // id: 0,
-      firstName: "Yves",
-      rating: 5,
-      coordinates: {
-        latitude: 35.827862,
-        longitude: -86.4087499,
-      },
-    },
-    {
-      id: 1,
-      firstName: "Sashi",
-      rating: 4,
-      coordinates: {
-        latitude: 35.8553034,
-        longitude: -86.427186,
-      },
-    },
-    {
-      id: 2,
-      firstName: "Keenan",
-      rating: 3,
-      coordinates: {
-        latitude: 35.7929171,
-        longitude: -86.784789,
-      },
-    },
-    {
-      id: 3,
-      firstName: "Sharon",
-      rating: 2,
-      coordinates: {
-        latitude: 35.770599,
-        longitude: -86.823697,
-      },
-    },
-  ];
+  const [lenders, setLenders] = useState([]);
   const value = useContext(UserContext);
 
   const [location, setLocation] = useState({
@@ -78,6 +64,7 @@ export default function BorrowMap({ navigation }) {
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
       });
+      getLenders();
     })();
   }, []);
 
@@ -87,6 +74,8 @@ export default function BorrowMap({ navigation }) {
   } else if (location) {
     text = JSON.stringify(location);
   }
+
+  console.log(lenders);
 
   const centerMap = () => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = location;
@@ -143,6 +132,21 @@ export default function BorrowMap({ navigation }) {
   const finished = () => {
     toggleApproved();
     navigation.navigate("Dashboard");
+  };
+
+  const getLenders = () => {
+    firebase
+      .firestore()
+      .collection("users")
+      .where("activeLender", "==", true)
+      .onSnapshot((snapshot) => {
+        setLenders(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        );
+      });
   };
 
   return (
@@ -212,11 +216,11 @@ export default function BorrowMap({ navigation }) {
           }}
           ref={mapView}
         >
-          {lenders.map((lender, index) => (
-            <View key={index} style={{ alignItems: "center" }}>
+          {lenders.map(({ id, data }) => (
+            <View key={id} style={{ alignItems: "center" }}>
               <Marker
-                coordinate={lender.coordinates}
-                title={lender.firstName}
+                coordinate={data.coordinates}
+                title={data.firstName}
                 style={{ alignItems: "center" }}
                 onPress={demoRequest}
               >
