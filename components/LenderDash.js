@@ -13,6 +13,7 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
+import { set } from "react-native-reanimated";
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -69,6 +70,17 @@ function LenderDash({ navigation }) {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         },
+      });
+  };
+
+  const goOffline = () => {
+    setActive(false);
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.user.user.uid}`)
+      .update({
+        activeLender: false,
       });
   };
   console.log(value.user.user.uid);
@@ -190,9 +202,7 @@ function LenderDash({ navigation }) {
                 name="handshake-o"
                 size={60}
                 color="#3D5F9C"
-                onPress={() => {
-                  setActive(false);
-                }}
+                onPress={goOffline}
               />
             )}
             {active === false ? (
