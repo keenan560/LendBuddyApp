@@ -86,12 +86,12 @@ export default function BorrowMap({ navigation }) {
       longitudeDelta,
     });
   };
-  // console.log(location);
 
   const mapView = React.createRef();
 
-  const demoRequest = (event) => {
-    event.preventDefault();
+  const demoRequest = (id) => {
+    // event.preventDefault();
+    console.log(id);
     Alert.alert(
       "Request",
       "Ask this lender to spot you?",
@@ -105,6 +105,18 @@ export default function BorrowMap({ navigation }) {
           text: "Yes",
           onPress: () => {
             toggleOverlay();
+            firebase
+              .firestore()
+              .collection("users")
+              .doc(`${id}`)
+              .collection("requests")
+              .add({
+                firstName: value.user.firstName,
+                lasttName: value.user.lasttName,
+                requestAmount: requestContext.requestState.amount,
+                category: requestContext.requestState.category,
+              });
+
             setTimeout(
               () => {
                 setVisible(false), setApproved(true);
@@ -148,6 +160,8 @@ export default function BorrowMap({ navigation }) {
         );
       });
   };
+
+  console.log(value.user);
 
   return (
     <View style={styles.container}>
@@ -222,7 +236,7 @@ export default function BorrowMap({ navigation }) {
                 coordinate={data.coordinates}
                 title={data.firstName}
                 style={{ alignItems: "center" }}
-                onPress={demoRequest}
+                onPress={(e) => demoRequest(id)}
               >
                 <Image
                   source={require("../assets/moneybag.jpg")}

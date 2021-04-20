@@ -37,14 +37,33 @@ function LenderDash({ navigation }) {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [visible, setVisible] = useState(false);
+  const [requests, setRequests] = useState([]);
 
   const value = useContext(UserContext);
 
+  // useEffect(() => {
+  //   if (active) {
+  //     setTimeout(() => {
+  //       toggleOverlay();
+  //     }, 5000);
+  //   }
+  // }, [active]);
+
   useEffect(() => {
     if (active) {
-      setTimeout(() => {
-        toggleOverlay();
-      }, 5000);
+      firebase
+        .firestore()
+        .collection("users")
+        .doc(`${value.user.user.uid}`)
+        .collection("requests")
+        .onSnapshot((snapshot) => {
+          setRequests(
+            snapshot.docs.map((doc) => ({
+              id: doc.id,
+              data: doc.data(),
+            }))
+          );
+        });
     }
   }, [active]);
 
@@ -84,7 +103,7 @@ function LenderDash({ navigation }) {
       });
   };
   console.log(value.user.user.uid);
-
+  console.log(requests);
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View>

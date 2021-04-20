@@ -6,13 +6,6 @@ export default React.createContext({
     this.user = appUser;
   },
   logout: () => {},
-  spotRequestAmount: 0,
-  setSpotRequestAmount: (amount) => {
-    this.spotRequestAmount = amount;
-  },
-  spotCategory: "none",
-  setSpotCategory: (category) => {
-    this.spotCategory = category;
-  },
+  userData: null,
   id: null,
 });

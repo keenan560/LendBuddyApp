@@ -62,6 +62,7 @@ const requestReducer = (state, action) => {
 export default function App() {
   const [user, setUser] = useState(null);
   const value = useContext(UserContext);
+  const [userData, setUserData] = useState("");
 
   const [request, requestDispatch] = useReducer(requestReducer, initialRequest);
 
@@ -76,6 +77,28 @@ export default function App() {
     setUser(null);
   };
 
+  const getUserData = (appUser) => {
+    if (appUser) {
+      firebase
+        .firestore()
+        .collection("users")
+        .doc(`${appUser}`)
+        .get()
+        .then((doc) => {
+          if (doc.exists) {
+            console.log("Document data:", doc.data());
+            setUserData(doc.data());
+          } else {
+            // doc.data() will be undefined in this case
+            console.log("No such document!");
+          }
+        })
+        .catch((error) => {
+          console.log("Error getting document:", error);
+        });
+    }
+  };
+
   return (
     <SpotRequestContext.Provider
       value={{ requestState: request, requestDispatch: requestDispatch }}
@@ -86,7 +109,9 @@ export default function App() {
             user: user,
             login: login,
             logout: logout,
+            getUserData: getUserData,
             id: null,
+            userData: userData,
           }}
         >
           <Stack.Navigator>

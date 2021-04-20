@@ -41,8 +41,10 @@ function Login({ navigation }) {
       .then((user) => {
         // Signed in
         // ...
+
         value.login(user);
-        // alert("Welcome " + user.user.email);
+        value.getUserData(user.user.uid);
+
         setTimeout(() => {
           setLoading(false);
           navigation.navigate("Dashboard", { name: "Dashboard" });
