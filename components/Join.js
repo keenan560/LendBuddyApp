@@ -55,13 +55,17 @@ function Join({ navigation }) {
         firebase
           .firestore()
           .collection("users")
-          .add({
+          .doc(`${authUser.user.uid}`)
+          .set({
             id: authUser.user.uid,
             email: authUser.user.email,
             firstName: firstName,
             lastName: lastName,
             dob: dob,
             mobile: mobile,
+            totalDebt: 0,
+            totalLent: 0,
+            activeLender: false,
           })
           .catch((error) => alert(error.message));
         alert("Please Login" + authUser.user.firstName);
