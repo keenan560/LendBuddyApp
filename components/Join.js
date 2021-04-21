@@ -12,6 +12,8 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
+import { ScrollView } from "react-native-gesture-handler";
+import { set } from "react-native-reanimated";
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -37,6 +39,11 @@ function Join({ navigation }) {
   const [password, setPassword] = useState("");
   const [dob, setDob] = useState("");
   const [mobile, setMobile] = useState("");
+  const [street1, setStreet1] = useState("");
+  const [street2, setStreet2] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zip, setZip] = useState("");
 
   const signUp = (event) => {
     event.preventDefault();
@@ -66,6 +73,11 @@ function Join({ navigation }) {
             totalDebt: 0,
             totalLent: 0,
             activeLender: false,
+            street1: street1,
+            street2: street2,
+            city: city,
+            state: state,
+            zipCode: zip,
           })
           .catch((error) => alert(error.message));
         alert("Please Login" + authUser.user.firstName);
@@ -78,83 +90,132 @@ function Join({ navigation }) {
     setPassword("");
     setDob("");
     setMobile("");
+    setStreet1("");
+    setStreet2("");
+    setCity("");
+    setState("");
+    setZip("");
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        lend<Text style={styles.lendColor}>$$</Text>Buddy
-      </Text>
-      <Text style={styles.slogan}>Spot a Friend</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="First Name"
-        textContentType="name"
-        clearTextOnFocus
-        value={firstName}
-        onChangeText={(text) => setFirstName(text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Last Name"
-        textContentType="name"
-        clearTextOnFocus
-        value={lastName}
-        onChangeText={(text) => setLastName(text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="DOB mmddyyyy"
-        textContentType="none"
-        clearTextOnFocus
-        value={dob}
-        onChangeText={(text) => setDob(text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        textContentType="emailAddress"
-        keyboardType="email-address"
-        clearTextOnFocus
-        value={email}
-        onChangeText={(text) => setEmail(text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        textContentType="password"
-        clearTextOnFocus
-        secureTextEntry
-        value={password}
-        onChangeText={(text) => setPassword(text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Mobile Number"
-        textContentType="telephoneNumber"
-        clearTextOnFocus
-        value={mobile}
-        onChangeText={(text) => setMobile(text)}
-      />
-      <TouchableOpacity style={styles.button} onPress={signUp}>
-        <Text style={styles.buttonText}>Join</Text>
-      </TouchableOpacity>
+      <ScrollView>
+        <Text style={styles.title}>
+          lend<Text style={styles.lendColor}>$$</Text>Buddy
+        </Text>
+        <Text style={styles.slogan}>Registration Form </Text>
+        <TextInput
+          style={styles.input}
+          placeholder="First Name"
+          textContentType="name"
+          clearTextOnFocus
+          value={firstName}
+          onChangeText={(text) => setFirstName(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name"
+          textContentType="name"
+          clearTextOnFocus
+          value={lastName}
+          onChangeText={(text) => setLastName(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="DOB mmddyyyy"
+          textContentType="none"
+          clearTextOnFocus
+          value={dob}
+          onChangeText={(text) => setDob(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          textContentType="emailAddress"
+          keyboardType="email-address"
+          clearTextOnFocus
+          value={email}
+          onChangeText={(text) => setEmail(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          textContentType="password"
+          clearTextOnFocus
+          secureTextEntry
+          value={password}
+          onChangeText={(text) => setPassword(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Mobile Number"
+          textContentType="telephoneNumber"
+          clearTextOnFocus
+          value={mobile}
+          onChangeText={(text) => setMobile(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Street Address"
+          textContentType="fullStreetAddress"
+          clearTextOnFocus
+          value={street1}
+          onChangeText={(text) => setStreet1(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Unit (optional)"
+          textContentType="fullStreetAddress"
+          clearTextOnFocus
+          value={street2}
+          onChangeText={(text) => setStreet2(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="City"
+          textContentType="addressCity"
+          clearTextOnFocus
+          value={city}
+          onChangeText={(text) => setCity(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="State (NY)"
+          textContentType="addressState"
+          clearTextOnFocus
+          value={state}
+          onChangeText={(text) => setState(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Zip"
+          textContentType="postalCode"
+          clearTextOnFocus
+          value={zip}
+          onChangeText={(text) => setZip(text)}
+        />
+        <TouchableOpacity style={styles.button} onPress={signUp}>
+          <Text style={styles.buttonText}>Join</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: "white",
     alignItems: "center",
     justifyContent: "center",
+    flex: 1,
   },
   title: {
     fontSize: 48,
     fontWeight: "700",
     marginBottom: 15,
     bottom: 55,
+    marginTop: 120,
+    textAlign: "center",
   },
 
   lendColor: {
@@ -166,6 +227,7 @@ const styles = StyleSheet.create({
     bottom: 53,
     fontSize: 16,
     fontWeight: "normal",
+    textAlign: "center",
   },
 
   input: {
@@ -185,6 +247,7 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
+    textAlign: "center",
     justifyContent: "center",
     backgroundColor: "#28a745",
     padding: 10,
@@ -192,6 +255,8 @@ const styles = StyleSheet.create({
     height: 50,
     marginBottom: 5,
     borderRadius: 5,
+    marginLeft: 10,
+    marginRight: 10,
   },
 
   buttonText: {

@@ -111,8 +111,8 @@ export default function BorrowMap({ navigation }) {
               .doc(`${id}`)
               .collection("requests")
               .add({
-                firstName: value.user.firstName,
-                lasttName: value.user.lasttName,
+                firstName: value.userData.firstName,
+                lasttName: value.userData.lasttName,
                 requestAmount: requestContext.requestState.amount,
                 category: requestContext.requestState.category,
               });
@@ -161,7 +161,7 @@ export default function BorrowMap({ navigation }) {
       });
   };
 
-  console.log(value.user);
+  console.log(value.userData.firstName);
 
   return (
     <View style={styles.container}>
