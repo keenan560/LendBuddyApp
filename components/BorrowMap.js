@@ -112,10 +112,15 @@ export default function BorrowMap({ navigation }) {
               .collection("requests")
               .add({
                 firstName: value.userData.firstName,
-                lasttName: value.userData.lasttName,
+                lastName: value.userData.lastName,
+                borrowerID: value.userData.id,
+                city: value.userData.city,
+                state: value.userData.state,
                 requestAmount: requestContext.requestState.amount,
                 category: requestContext.requestState.category,
-              });
+                decision: "pending",
+              })
+              .catch((error) => alert(error.message));
 
             setTimeout(
               () => {

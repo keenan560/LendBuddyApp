@@ -13,7 +13,6 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
-import { set } from "react-native-reanimated";
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -67,6 +66,12 @@ function LenderDash({ navigation }) {
     }
   }, [active]);
 
+  useEffect(() => {
+    if (requests.length > 0) {
+      toggleOverlay();
+    }
+  }, [requests]);
+
   const toggleOverlay = () => {
     setVisible(!visible);
   };
@@ -102,8 +107,8 @@ function LenderDash({ navigation }) {
         activeLender: false,
       });
   };
-  console.log(value.user.user.uid);
-  console.log(requests);
+
+  console.log(requests.length);
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View>
