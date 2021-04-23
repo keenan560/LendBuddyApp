@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useContext } from "react";
+import { Text } from "react-native-elements";
 import { StyleSheet, View, Animated } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
-import { Text, Button, Overlay, ListItem, Avatar } from "react-native-elements";
-import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
 import * as Location from "expo-location";
 import UserContext from "./context/userContext";
 import * as firebase from "firebase";
+import LoanRequest from "./LoanRequest";
 
 // Optionally import the services that you want to use
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
 //import "firebase/functions";
-//import "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
@@ -36,6 +35,7 @@ function LenderDash({ navigation }) {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [visible, setVisible] = useState(false);
+
   const [requests, setRequests] = useState([]);
 
   const value = useContext(UserContext);
@@ -72,12 +72,11 @@ function LenderDash({ navigation }) {
     }
   }, [requests]);
 
-  const toggleOverlay = () => {
-    setVisible(!visible);
-  };
-
   const toggleActive = () => {
     setActive(!active);
+  };
+  const toggleOverlay = () => {
+    setVisible(!visible);
   };
 
   const getCoords = async () => {
@@ -109,85 +108,23 @@ function LenderDash({ navigation }) {
   };
 
   console.log(requests.length);
+  console.log(requests);
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View>
-        <Overlay
-          style={{ backgroundColor: "#fff", flex: 0.5 }}
-          isVisible={visible}
-        >
-          <View
-            style={{
-              flex: 0.9,
-              justifyContent: "center",
-              alignItems: "center",
-              marginTop: 20,
-            }}
-          >
-            <Avatar
-              source={{
-                uri:
-                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnbyQ9BrRqMbn7NeiM0yRfqAEteiruMHVKXA&usqp=CAU",
-              }}
-              size={100}
-              rounded
-              title="VS"
-            />
-            <Text style={{ fontSize: 30, marginBottom: 50, marginTop: 20 }}>
-              Vicky is asking for a{" "}
-              <Text style={{ fontWeight: "bold" }}>$75</Text> spot do you{" "}
-              <Text style={{ color: "#28a745" }}>approve?</Text>
-            </Text>
-            <Text style={{ fontWeight: "normal", fontStyle: "italic" }}>
-              Franklin, TN
-            </Text>
-            <Text style={{ fontWeight: "bold" }}>
-              97% On Time Repayment Rate
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-evenly",
-                marginTop: 20,
-              }}
-            >
-              <FontAwesome
-                name="check"
-                size={100}
-                color="#28a745"
-                style={{ marginRight: 90 }}
-                onPress={toggleOverlay}
-              />
-              <FontAwesome
-                name="remove"
-                size={100}
-                color="#ff4d4d"
-                onPress={toggleOverlay}
-              />
-            </View>
-            {/* Timer */}
-            <CountdownCircleTimer
-              isPlaying
-              size={90}
-              duration={30}
-              colors={[
-                ["#004777", 0.4],
-                ["#F7B801", 0.4],
-                ["#A30000", 0.2],
-              ]}
-              onComplete={toggleOverlay}
-            >
-              {({ remainingTime, animatedColor }) => (
-                <Animated.Text style={{ color: animatedColor }}>
-                  {/* {remainingTime} */}
-                </Animated.Text>
-              )}
-            </CountdownCircleTimer>
-          </View>
-        </Overlay>
-      </View>
       <View style={styles.container}>
+        <View>
+          {requests.map(({ id, data }) => (
+            <LoanRequest
+              key={id}
+              category={data.category}
+              firstName={data.firstName}
+              city={data.city}
+              state={data.state}
+              requestAmount={data.requestAmount}
+          
+            />
+          ))}
+        </View>
         <View style={styles.row}>
           <View style={styles.iconSpace}>
             <MaterialIcons

@@ -119,6 +119,7 @@ export default function BorrowMap({ navigation }) {
                 requestAmount: requestContext.requestState.amount,
                 category: requestContext.requestState.category,
                 decision: "pending",
+                timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
               })
               .catch((error) => alert(error.message));
 
