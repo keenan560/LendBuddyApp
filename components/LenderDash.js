@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Text } from "react-native-elements";
-import { StyleSheet, View, Animated } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { MaterialIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
@@ -113,17 +113,18 @@ function LenderDash({ navigation }) {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.container}>
         <View>
-          {requests.map(({ id, data }) => (
-            <LoanRequest
-              key={id}
-              category={data.category}
-              firstName={data.firstName}
-              city={data.city}
-              state={data.state}
-              requestAmount={data.requestAmount}
-          
-            />
-          ))}
+          {requests.length > 1 &&
+            active &&
+            requests.map(({ id, data }) => (
+              <LoanRequest
+                key={id}
+                category={data.category}
+                firstName={data.firstName}
+                city={data.city}
+                state={data.state}
+                requestAmount={data.requestAmount}
+              />
+            ))}
         </View>
         <View style={styles.row}>
           <View style={styles.iconSpace}>

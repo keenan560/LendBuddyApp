@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View } from "react-native";
+import { View, Animated } from "react-native";
 import { Text, Button, Overlay, ListItem, Avatar } from "react-native-elements";
 import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
 import { FontAwesome } from "@expo/vector-icons";
