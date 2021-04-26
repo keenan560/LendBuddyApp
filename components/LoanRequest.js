@@ -1,10 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Animated } from "react-native";
 import { Text, Button, Overlay, ListItem, Avatar } from "react-native-elements";
 import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
 import { FontAwesome } from "@expo/vector-icons";
 
-function LoanRequest({ firstName, category, city, requestAmount, state, id }) {
+function LoanRequest({
+  firstName,
+  category,
+  city,
+  requestAmount,
+  state,
+  id,
+  cb,
+}) {
   const [visible, setVisible] = useState(true);
 
   const toggleOverlay = () => {
@@ -15,6 +23,8 @@ function LoanRequest({ firstName, category, city, requestAmount, state, id }) {
       <Overlay
         style={{ backgroundColor: "#fff", flex: 0.5 }}
         isVisible={visible}
+        fullScreen
+        children
       >
         <View
           style={{

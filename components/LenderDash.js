@@ -66,11 +66,11 @@ function LenderDash({ navigation }) {
     }
   }, [active]);
 
-  useEffect(() => {
-    if (requests.length > 0) {
-      toggleOverlay();
-    }
-  }, [requests]);
+  // useEffect(() => {
+  //   if (requests.length > 0) {
+  //     toggleOverlay();
+  //   }
+  // }, [requests]);
 
   const toggleActive = () => {
     setActive(!active);
