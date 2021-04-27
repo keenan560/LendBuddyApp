@@ -35,8 +35,8 @@ function LenderDash({ navigation }) {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [visible, setVisible] = useState(false);
-
   const [requests, setRequests] = useState([]);
+  const [modalIndex, setModalIndex] = useState(0);
 
   const value = useContext(UserContext);
 
@@ -66,12 +66,6 @@ function LenderDash({ navigation }) {
     }
   }, [active]);
 
-  // useEffect(() => {
-  //   if (requests.length > 0) {
-  //     toggleOverlay();
-  //   }
-  // }, [requests]);
-
   const toggleActive = () => {
     setActive(!active);
   };
@@ -86,7 +80,7 @@ function LenderDash({ navigation }) {
     firebase
       .firestore()
       .collection("users")
-      .doc(`${value.user.user.uid}`)
+      .doc(`${value.userData.id}`)
       .update({
         activeLender: true,
         coordinates: {
@@ -101,7 +95,7 @@ function LenderDash({ navigation }) {
     firebase
       .firestore()
       .collection("users")
-      .doc(`${value.user.user.uid}`)
+      .doc(`${value.userData.id}`)
       .update({
         activeLender: false,
       });
@@ -112,20 +106,21 @@ function LenderDash({ navigation }) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.container}>
-        <View>
-          {requests.length > 1 &&
-            active &&
-            requests.map(({ id, data }) => (
-              <LoanRequest
-                key={id}
-                category={data.category}
-                firstName={data.firstName}
-                city={data.city}
-                state={data.state}
-                requestAmount={data.requestAmount}
-              />
-            ))}
-        </View>
+        {requests.length > 0 &&
+          active &&
+          requests.map(({ id, data }) => (
+            <LoanRequest
+              key={id}
+              id={id}
+              category={data.category}
+              firstName={data.firstName}
+              lastName={data.lastName}
+              city={data.city}
+              state={data.state}
+              requestAmount={data.requestAmount}
+            />
+          ))}
+
         <View style={styles.row}>
           <View style={styles.iconSpace}>
             <MaterialIcons
