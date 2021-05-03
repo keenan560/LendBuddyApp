@@ -32,13 +32,10 @@ if (!firebase.apps.length) {
 }
 
 export default function BorrowMap({ navigation }) {
-  const requestContext = useContext(SpotRequestContext);
-
-  console.log(requestContext.requestState);
-
-  const [lenders, setLenders] = useState([]);
   const value = useContext(UserContext);
-
+  const requestContext = useContext(SpotRequestContext);
+  const [lenders, setLenders] = useState([]);
+  const [requestResults, setRequestResults] = useState([]);
   const [location, setLocation] = useState({
     coords: {
       latitude: 36.15596,
@@ -48,6 +45,7 @@ export default function BorrowMap({ navigation }) {
     },
   });
   const [errorMsg, setErrorMsg] = useState(null);
+  const [docId, setDocId] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -68,6 +66,22 @@ export default function BorrowMap({ navigation }) {
     })();
   }, []);
 
+  useEffect(() => {
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .collection("results")
+      .onSnapshot((snapshot) => {
+        setRequestResults(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        );
+      });
+  }, []);
+
   let text = "Waiting..";
   if (errorMsg) {
     text = errorMsg;
@@ -76,7 +90,7 @@ export default function BorrowMap({ navigation }) {
   }
 
   console.log(lenders);
-
+  console.log(requestContext.requestState);
   const centerMap = () => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = location;
     mapView.current.animateToRegion({
@@ -91,7 +105,7 @@ export default function BorrowMap({ navigation }) {
 
   const demoRequest = (id) => {
     // event.preventDefault();
-    console.log(id);
+
     Alert.alert(
       "Request",
       "Ask this lender to spot you?",
@@ -103,9 +117,10 @@ export default function BorrowMap({ navigation }) {
         },
         {
           text: "Yes",
-          onPress: () => {
+          onPress: async () => {
             toggleOverlay();
-            firebase
+            // Send to lender
+            await firebase
               .firestore()
               .collection("users")
               .doc(`${id}`)
@@ -121,14 +136,17 @@ export default function BorrowMap({ navigation }) {
                 decision: "pending",
                 timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
               })
+              .then((docRef) => {
+                addToResults(docRef.id);
+              })
               .catch((error) => alert(error.message));
 
             setTimeout(
               () => {
-                setVisible(false), setApproved(true);
+                setVisible(false), toggleOverlay();
               },
 
-              5000
+              3000
             );
           },
         },
@@ -145,6 +163,14 @@ export default function BorrowMap({ navigation }) {
   const [approved, setApproved] = useState(false);
   const toggleApproved = () => {
     setApproved(!approved);
+  };
+
+  const [denied, setDenied] = useState(false);
+  const toggleDenied = () => {
+    if (visible) {
+      toggleOverlay();
+    }
+    setDenied(!denied);
   };
 
   const finished = () => {
@@ -167,7 +193,26 @@ export default function BorrowMap({ navigation }) {
       });
   };
 
-  console.log(value.userData.firstName);
+  const addToResults = (id) => {
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .collection("results")
+      .doc(`${id}`)
+      .set({
+        firstName: value.userData.firstName,
+        lastName: value.userData.lastName,
+        borrowerID: value.userData.id,
+        city: value.userData.city,
+        state: value.userData.state,
+        requestAmount: requestContext.requestState.amount,
+        category: requestContext.requestState.category,
+        decision: "pending",
+        timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
+      })
+      .catch((error) => alert(error.message));
+  };
 
   return (
     <View style={styles.container}>
@@ -176,6 +221,13 @@ export default function BorrowMap({ navigation }) {
         isVisible={visible}
       >
         <Text style={{ width: "100%" }}>Lender is making a decision...</Text>
+        <Button loading type="clear" />
+      </Overlay>
+      <Overlay
+        style={{ height: "auto", width: "100%", flex: 1 }}
+        isVisible={denied}
+      >
+        <Text style={{ width: "100%" }}>Lender cannot spot you</Text>
         <Button loading type="clear" />
       </Overlay>
       <Overlay

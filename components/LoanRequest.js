@@ -36,16 +36,29 @@ function LoanRequest({
   state,
   id,
   cb,
+  borrowerID,
 }) {
   const [visible, setVisible] = useState(true);
   const value = useContext(UserContext);
-  console.log(value.userData.id);
+  console.log("the loan Id is " + id);
 
   const toggleOverlay = () => {
     setVisible(!visible);
   };
 
   const denyRequest = async () => {
+    // update borrower's request with deny
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(`${borrowerID}`)
+      .collection("results")
+      .doc(`${id}`)
+      .update({
+        decision: "denied",
+      })
+      .catch((error) => console.log(error.message));
+    // Delete from lender's queue
     await firebase
       .firestore()
       .collection("users")
@@ -84,6 +97,9 @@ function LoanRequest({
             //   uri:
             //     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnbyQ9BrRqMbn7NeiM0yRfqAEteiruMHVKXA&usqp=CAU",
             // }}
+            source={{
+              uri: "nothing",
+            }}
             size={100}
             rounded
             title={`${firstName[0].toUpperCase()}${lastName[0].toUpperCase()}`}

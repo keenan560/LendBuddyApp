@@ -36,7 +36,6 @@ function LenderDash({ navigation }) {
   const [errorMsg, setErrorMsg] = useState(null);
   const [visible, setVisible] = useState(false);
   const [requests, setRequests] = useState([]);
-  const [modalIndex, setModalIndex] = useState(0);
 
   const value = useContext(UserContext);
 
@@ -53,7 +52,7 @@ function LenderDash({ navigation }) {
       firebase
         .firestore()
         .collection("users")
-        .doc(`${value.user.user.uid}`)
+        .doc(`${value.userData.id}`)
         .collection("requests")
         .onSnapshot((snapshot) => {
           setRequests(
@@ -106,8 +105,7 @@ function LenderDash({ navigation }) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.container}>
-        {requests.length > 0 &&
-          active &&
+        {active &&
           requests.map(({ id, data }) => (
             <LoanRequest
               key={id}
@@ -118,6 +116,7 @@ function LenderDash({ navigation }) {
               city={data.city}
               state={data.state}
               requestAmount={data.requestAmount}
+              borrowerID={data.borrowerID}
             />
           ))}
 
