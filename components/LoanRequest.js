@@ -146,7 +146,12 @@ function LoanRequest({
               ["#F7B801", 0.4],
               ["#A30000", 0.2],
             ]}
-            onComplete={toggleOverlay}
+            // onComplete={toggleOverlay}
+            onComplete={() => {
+              // do your stuff here
+              denyRequest();
+              return [false]; // repeat animation in 1.5 seconds
+            }}
           >
             {({ remainingTime, animatedColor }) => (
               <Animated.Text style={{ color: animatedColor }}>

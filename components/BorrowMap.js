@@ -7,6 +7,8 @@ import { Rating, Button, Overlay } from "react-native-elements";
 import MakeItRain from "react-native-make-it-rain";
 import UserContext from "./context/userContext";
 import { SpotRequestContext } from "../App";
+import { FontAwesome } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as firebase from "firebase";
 
 // Optionally import the services that you want to use
@@ -257,15 +259,36 @@ export default function BorrowMap({ navigation }) {
         style={{ height: "auto", width: "100%", flex: 1 }}
         isVisible={visible}
       >
-        <Text style={{ width: "100%" }}>Lender is making a decision...</Text>
-        <Button loading type="clear" />
+        <Text style={{ width: "100%", fontSize: 18 }}>
+          Lender is making a decision...
+        </Text>
+        <MaterialCommunityIcons
+          style={{ textAlign: "center" }}
+          name="timer-sand"
+          size={24}
+          color="black"
+        />
+        {/* <Button loading type="clear" /> */}
       </Overlay>
       <Overlay
-        style={{ height: "auto", width: "100%", flex: 1 }}
+        style={{
+          height: "auto",
+          width: "100%",
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
         isVisible={denied}
       >
-        <Text style={{ width: "100%" }}>Lender cannot spot you</Text>
-        <Button loading type="clear" />
+        <Text style={{ width: "100%", fontSize: 18 }}>
+          Sorry the lender cannot spot you.
+        </Text>
+        <FontAwesome
+          style={{ textAlign: "center" }}
+          name="thumbs-o-down"
+          size={30}
+          color="black"
+        />
       </Overlay>
       <Overlay
         style={{ backgroundColor: "#fff", flex: 0.8 }}
