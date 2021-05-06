@@ -81,6 +81,14 @@ export default function BorrowMap({ navigation }) {
         );
       });
   }, []);
+  useEffect(() => {
+    if (requestResults.length > 0) {
+      console.log(requestResults.length);
+      requestResults.forEach(({ id, data }) => {
+        decisionMaker(id, data);
+      });
+    }
+  }, [requestResults]);
 
   let text = "Waiting..";
   if (errorMsg) {
@@ -89,8 +97,8 @@ export default function BorrowMap({ navigation }) {
     text = JSON.stringify(location);
   }
 
-  console.log(lenders);
-  console.log(requestContext.requestState);
+  // console.log(lenders);
+  // console.log(requestContext.requestState);
   const centerMap = () => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = location;
     mapView.current.animateToRegion({
@@ -141,13 +149,13 @@ export default function BorrowMap({ navigation }) {
               })
               .catch((error) => alert(error.message));
 
-            setTimeout(
-              () => {
-                setVisible(false), toggleOverlay();
-              },
+            // setTimeout(
+            //   () => {
+            //     setVisible(false);
+            //   },
 
-              3000
-            );
+            //   3000
+            // );
           },
         },
       ],
@@ -168,7 +176,7 @@ export default function BorrowMap({ navigation }) {
   const [denied, setDenied] = useState(false);
   const toggleDenied = () => {
     if (visible) {
-      toggleOverlay();
+      setVisible(false);
     }
     setDenied(!denied);
   };
@@ -212,6 +220,35 @@ export default function BorrowMap({ navigation }) {
         timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
       })
       .catch((error) => alert(error.message));
+  };
+
+  const decisionMaker = (id, data) => {
+    switch (data.decision) {
+      case "denied":
+        firebase
+          .firestore()
+          .collection("users")
+          .doc(`${value.userData.id}`)
+          .collection("results")
+          .doc(`${id}`)
+          .delete()
+          .then(() => {
+            console.log("Document successfully deleted!");
+          })
+          .catch((error) => {
+            console.error("Error removing document: ", error);
+          });
+
+        setVisible(false);
+        setDenied(true);
+        setTimeout(() => {
+          setDenied(false);
+        }, 3000);
+        break;
+      case "approved":
+        setApproved(!approved);
+        break;
+    }
   };
 
   return (
@@ -272,6 +309,7 @@ export default function BorrowMap({ navigation }) {
           {requestContext.requestState.category}...
         </Text>
       </View>
+
       <CurrentLocationButton cb={centerMap} />
       {location ? (
         <MapView
