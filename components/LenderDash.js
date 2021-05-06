@@ -39,14 +39,6 @@ function LenderDash({ navigation }) {
 
   const value = useContext(UserContext);
 
-  // useEffect(() => {
-  //   if (active) {
-  //     setTimeout(() => {
-  //       toggleOverlay();
-  //     }, 5000);
-  //   }
-  // }, [active]);
-
   useEffect(() => {
     if (active) {
       firebase
@@ -74,6 +66,14 @@ function LenderDash({ navigation }) {
 
   const getCoords = async () => {
     setActive(true);
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .update({
+        activeLender: true,
+      });
+
     let location = await Location.getCurrentPositionAsync({});
     setLocation(location);
     firebase

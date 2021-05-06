@@ -37,22 +37,36 @@ function Dashboard({ navigation }) {
     setSwitchValue(value);
   };
   console.log(value.userData.totalDebt);
+
+  // useEffect(() => {
+  //   firebase
+  //     .firestore()
+  //     .collection("users")
+  //     .doc(`${value.userData.id}`)
+  //     .get()
+  //     .then((doc) => {
+  //       if (doc.exists) {
+  //         console.log("Document data:", doc.data());
+  //         setUser(doc.data());
+  //       } else {
+  //         // doc.data() will be undefined in this case
+  //         console.log("No such document!");
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.log("Error getting document:", error);
+  //     });
+  // }, []);
+
   useEffect(() => {
     firebase
       .firestore()
       .collection("users")
-      .where("email", "==", `${value.user.user.email}`)
-      .get()
-      .then(function (querySnapshot) {
-        querySnapshot.forEach(function (doc) {
-          // doc.data() is never undefined for query doc snapshots
-          setUser(doc.data());
-          // console.log(doc.id, " => ", doc.data());
-        });
+      .doc(`${value.userData.id}`)
+      .onSnapshot((snapshot) => {
+        setUser(snapshot.data());
       });
   }, []);
-
-  // console.log(value.user);
 
   const logOut = () =>
     Alert.alert(
@@ -129,13 +143,13 @@ function Dashboard({ navigation }) {
           {switchValue ? (
             <Text style={styles.dashTitle}>
               <Text style={styles.spotColor}>
-                ${value.userData.totalLent ? value.userData.totalLent : 0}
+                ${user ? user.totalLent : value.userData.totalLent}
               </Text>
             </Text>
           ) : (
             <Text style={styles.dashTitle}>
               <Text style={styles.oweColor}>
-                ${value.userData.totalDebt ? value.userData.totalDebt : 0}
+                ${user ? user.totalDebt : value.userData.totalDebt}
               </Text>
             </Text>
           )}

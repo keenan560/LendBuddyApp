@@ -2,79 +2,43 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import { SearchBar, Text } from "react-native-elements";
 import Lender from "./Lender";
+import * as firebase from "firebase";
 
-const searchLenders = [
-  {
-    name: "Dylan",
-    rating: 4,
-    city: "San Francisco",
-    online: true,
-  },
-  {
-    name: "Hosea",
-    rating: 3,
-    city: "Los Angeles",
-    online: true,
-  },
-  {
-    name: "Zena",
-    rating: 5,
-    city: "San Diego",
-    online: true,
-  },
-  {
-    name: "Mark",
-    rating: 2,
-    city: "Sacremento",
-    online: false,
-  },
-  {
-    name: "Latoya",
-    rating: 5,
-    city: "San Jose",
-    online: true,
-  },
-];
-const userStateLenders = [
-  {
-    name: "Tim",
-    rating: 4,
-    city: "Nashville",
-    online: false,
-  },
-  {
-    name: "Josh",
-    rating: 3,
-    city: "Knoxville",
-    online: false,
-  },
-  {
-    name: "Shasha",
-    rating: 5,
-    city: "Chattanoga",
-    online: true,
-  },
-  {
-    name: "Greg",
-    rating: 2,
-    city: "Franklin",
-    online: true,
-  },
-  {
-    name: "Daryl",
-    rating: 5,
-    city: "Brentwood",
-    online: false,
-  },
-];
+// Optionally import the services that you want to use
+import "firebase/auth";
+import "firebase/firestore";
 
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 function SearchLenders({ navigation }) {
   const [search, setSearch] = useState("");
   const [loading, SetLoading] = useState(false);
   const [lenders, setLenders] = useState([]);
 
   useEffect(() => {
-    setLenders(userStateLenders);
+    firebase
+      .firestore()
+      .collection("users")
+      .onSnapshot((snapshot) => {
+        setLenders(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        );
+      });
   }, []);
 
   return (
@@ -93,13 +57,13 @@ function SearchLenders({ navigation }) {
 
       <ScrollView>
         {lenders ? (
-          lenders.map((lender, index) => (
+          lenders.map(({ id, data }) => (
             <Lender
-              key={index}
-              name={lender.name}
-              rating={lender.rating}
-              city={lender.city}
-              online={lender.online}
+              key={id}
+              name={data.firstName}
+              // rating={data.rating}
+              city={data.city}
+              online={data.activeLender}
             />
           ))
         ) : (
