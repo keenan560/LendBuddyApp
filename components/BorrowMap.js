@@ -15,6 +15,7 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
+import { set } from "react-native-reanimated";
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -150,14 +151,6 @@ export default function BorrowMap({ navigation }) {
                 addToResults(docRef.id);
               })
               .catch((error) => alert(error.message));
-
-            // setTimeout(
-            //   () => {
-            //     setVisible(false);
-            //   },
-
-            //   3000
-            // );
           },
         },
       ],
@@ -248,7 +241,25 @@ export default function BorrowMap({ navigation }) {
         }, 3000);
         break;
       case "approved":
+        setVisible(false);
         setApproved(!approved);
+        firebase
+          .firestore()
+          .collection("users")
+          .doc(`${value.userData.id}`)
+          .update({
+            totalDebt: (value.userData.totalDebt += data.requestAmount),
+          })
+          .catch((errorMsg) => console.log(errorMsg.message))
+          .then(() => {
+            firebase
+              .firestore()
+              .collection("users")
+              .doc(`${value.userData.id}`)
+              .collection("results")
+              .doc(`${id}`)
+              .delete();
+          });
         break;
     }
   };

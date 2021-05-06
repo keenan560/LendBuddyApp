@@ -36,7 +36,7 @@ function Dashboard({ navigation }) {
   const toggleSwitch = (value) => {
     setSwitchValue(value);
   };
-
+  console.log(value.userData.totalDebt);
   useEffect(() => {
     firebase
       .firestore()
@@ -51,8 +51,6 @@ function Dashboard({ navigation }) {
         });
       });
   }, []);
-
-  
 
   // console.log(value.user);
 
@@ -131,13 +129,13 @@ function Dashboard({ navigation }) {
           {switchValue ? (
             <Text style={styles.dashTitle}>
               <Text style={styles.spotColor}>
-                ${user && user.totalLent ? user.totalLent : 0}
+                ${value.userData.totalLent ? value.userData.totalLent : 0}
               </Text>
             </Text>
           ) : (
             <Text style={styles.dashTitle}>
               <Text style={styles.oweColor}>
-                ${user && user.totalDebt ? user.totalDebt : 0}
+                ${value.userData.totalDebt ? value.userData.totalDebt : 0}
               </Text>
             </Text>
           )}

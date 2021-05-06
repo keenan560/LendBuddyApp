@@ -46,6 +46,36 @@ function LoanRequest({
     setVisible(!visible);
   };
 
+  const approveRequest = async () => {
+    // update borrower's request with deny
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(`${borrowerID}`)
+      .collection("results")
+      .doc(`${id}`)
+      .update({
+        decision: "approved",
+      })
+      .catch((error) => console.log(error.message));
+    // Delete from lender's queue
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .collection("requests")
+      .doc(`${id}`)
+      .delete()
+      .then(() => {
+        console.log("Document successfully deleted!");
+      })
+      .catch((error) => {
+        console.error("Error removing document: ", error);
+      });
+
+    toggleOverlay();
+  };
+
   const denyRequest = async () => {
     // update borrower's request with deny
     await firebase
@@ -127,7 +157,7 @@ function LoanRequest({
               size={100}
               color="#28a745"
               style={{ marginRight: 90 }}
-              onPress={toggleOverlay}
+              onPress={approveRequest}
             />
             <FontAwesome
               name="remove"
