@@ -1,4 +1,4 @@
-import React, { useEffect, useContext } from "react";
+import React, { useEffect, useContext, useState } from "react";
 import { StyleSheet, Text, View, Animated } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -11,6 +11,7 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
+
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -31,14 +32,25 @@ if (!firebase.apps.length) {
 
 function BorrowerDash({ navigation }) {
   const value = useContext(UserContext);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     firebase
       .firestore()
       .collection("users")
-      .doc(`${value.user.user.uid}`)
+      .doc(`${value.userData.id}`)
       .update({
         activeLender: false,
+      });
+  }, []);
+
+  useEffect(() => {
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .onSnapshot((snapshot) => {
+        setUser(snapshot.data());
       });
   }, []);
 
@@ -59,19 +71,36 @@ function BorrowerDash({ navigation }) {
             />
             <Text style={styles.iconText}>Discounts</Text>
           </View>
-          <View style={styles.iconSpace}>
-            <MaterialIcons
-              name="card-giftcard"
-              size={60}
-              color="#28a745"
-              onPress={() =>
-                navigation.navigate("Spot Request", {
-                  name: "Spot Request Details",
-                })
-              }
-            />
-            <Text style={styles.iconText}>Borrow</Text>
-          </View>
+          {user && user.totalDebt < 250 ? (
+            <View style={styles.iconSpace}>
+              <MaterialIcons
+                name="card-giftcard"
+                size={60}
+                color="#28a745"
+                onPress={() =>
+                  navigation.navigate("Spot Request", {
+                    name: "Spot Request Details",
+                  })
+                }
+              />
+              <Text style={styles.iconText}>Borrow</Text>
+            </View>
+          ) : (
+            <View>
+              <MaterialIcons
+                name="warning"
+                size={65}
+                color="lightgray"
+                onPress={() =>
+                  alert(
+                    "You have reached your limit of $250. Please pay down your balance to borrow again."
+                  )
+                }
+              />
+              <Text style={styles.iconText}>Borrow</Text>
+            </View>
+          )}
+
           <View style={styles.iconSpace}>
             <MaterialIcons
               name="history"

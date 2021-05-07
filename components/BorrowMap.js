@@ -15,7 +15,6 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
-import { set } from "react-native-reanimated";
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -49,6 +48,17 @@ export default function BorrowMap({ navigation }) {
   });
   const [errorMsg, setErrorMsg] = useState(null);
   const [docId, setDocId] = useState("");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .onSnapshot((snapshot) => {
+        setUser(snapshot.data());
+      });
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -248,7 +258,7 @@ export default function BorrowMap({ navigation }) {
           .collection("users")
           .doc(`${value.userData.id}`)
           .update({
-            totalDebt: (value.userData.totalDebt += data.requestAmount),
+            totalDebt: user.totalDebt + data.requestAmount,
           })
           .catch((errorMsg) => console.log(errorMsg.message))
           .then(() => {
@@ -263,6 +273,7 @@ export default function BorrowMap({ navigation }) {
         break;
     }
   };
+  console.log("total debt is " + value.userData.totalDebt);
 
   return (
     <View style={styles.container}>

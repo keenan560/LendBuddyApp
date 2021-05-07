@@ -38,26 +38,6 @@ function Dashboard({ navigation }) {
   };
   console.log(value.userData.totalDebt);
 
-  // useEffect(() => {
-  //   firebase
-  //     .firestore()
-  //     .collection("users")
-  //     .doc(`${value.userData.id}`)
-  //     .get()
-  //     .then((doc) => {
-  //       if (doc.exists) {
-  //         console.log("Document data:", doc.data());
-  //         setUser(doc.data());
-  //       } else {
-  //         // doc.data() will be undefined in this case
-  //         console.log("No such document!");
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       console.log("Error getting document:", error);
-  //     });
-  // }, []);
-
   useEffect(() => {
     firebase
       .firestore()
@@ -88,6 +68,7 @@ function Dashboard({ navigation }) {
       ],
       { cancelable: false }
     );
+  console.log(user);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -142,15 +123,11 @@ function Dashboard({ navigation }) {
         <View style={styles.row}>
           {switchValue ? (
             <Text style={styles.dashTitle}>
-              <Text style={styles.spotColor}>
-                ${user ? user.totalLent : value.userData.totalLent}
-              </Text>
+              <Text style={styles.spotColor}>${user ? user.totalLent : 0}</Text>
             </Text>
           ) : (
             <Text style={styles.dashTitle}>
-              <Text style={styles.oweColor}>
-                ${user ? user.totalDebt : value.userData.totalDebt}
-              </Text>
+              <Text style={styles.oweColor}>${user ? user.totalDebt : 0}</Text>
             </Text>
           )}
         </View>

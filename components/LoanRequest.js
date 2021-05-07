@@ -10,6 +10,7 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
+
 //import "firebase/functions";
 
 const firebaseConfig = {
@@ -45,8 +46,44 @@ function LoanRequest({
   const toggleOverlay = () => {
     setVisible(!visible);
   };
-
+  function nextweek() {
+    var today = new Date();
+    var nextweek = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 7
+    );
+    return nextweek;
+  }
   const approveRequest = async () => {
+    // add to Lender's debtor collection
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .collection("debtors")
+      .add({
+        borrowerID: borrowerID,
+        firstName: firstName,
+        lastName: lastName,
+        category: category,
+        city: city,
+        state: state,
+        loanAmount: requestAmount,
+        amountOwed: (
+          parseInt(requestAmount / 2) +
+          parseFloat(parseInt(requestAmount / 2) * 0.12) +
+          parseFloat(parseInt(requestAmount / 2) * 0.035)
+        ).toFixed(2),
+        principal: parseInt(requestAmount / 2),
+        interest: parseFloat(parseInt(requestAmount / 2) * 0.12).toFixed(2),
+        lbRevenue: parseFloat(parseInt(requestAmount / 2) * 0.035).toFixed(2),
+        originDate: firebase.firestore.FieldValue.serverTimestamp(),
+        nextPaymentDue: nextweek(),
+        timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
+        status: "good",
+      })
+      .catch((error) => console.log(error.message));
     // update borrower's request with deny
     await firebase
       .firestore()
