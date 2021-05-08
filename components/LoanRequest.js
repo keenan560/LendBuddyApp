@@ -70,6 +70,7 @@ function LoanRequest({
         city: city,
         state: state,
         loanAmount: requestAmount,
+        balance: requestAmount,
         amountOwed: (
           parseInt(requestAmount / 2) +
           parseFloat(parseInt(requestAmount / 2) * 0.12) +
@@ -83,8 +84,41 @@ function LoanRequest({
         timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
         status: "good",
       })
+      .then((docRef) => {
+        firebase
+          .firestore()
+          .collection("users")
+          .doc(`${borrowerID}`)
+          .collection("debts")
+          .doc(`${docRef.id}`)
+          .set({
+            lenderFirstName: value.userData.firstName,
+            lenderLastName: value.userData.lastName,
+            firstName: firstName,
+            lastName: lastName,
+            category: category,
+            city: city,
+            state: state,
+            loanAmount: requestAmount,
+            balance: requestAmount,
+            amountOwed: (
+              parseInt(requestAmount / 2) +
+              parseFloat(parseInt(requestAmount / 2) * 0.12) +
+              parseFloat(parseInt(requestAmount / 2) * 0.035)
+            ).toFixed(2),
+            principal: parseInt(requestAmount / 2),
+            interest: parseFloat(parseInt(requestAmount / 2) * 0.12).toFixed(2),
+            lbRevenue: parseFloat(parseInt(requestAmount / 2) * 0.035).toFixed(
+              2
+            ),
+            originDate: firebase.firestore.FieldValue.serverTimestamp(),
+            nextPaymentDue: nextweek(),
+            timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
+            status: "good",
+          });
+      })
       .catch((error) => console.log(error.message));
-    // update borrower's request with deny
+    // update borrower's request with approve
     await firebase
       .firestore()
       .collection("users")
@@ -93,6 +127,21 @@ function LoanRequest({
       .doc(`${id}`)
       .update({
         decision: "approved",
+      })
+      .then(() => {
+        firebase
+          .firestore()
+          .collection("users")
+          .doc(`${borrowerID}`)
+          .collection("borrowActivities")
+          .add({
+            lenderFirstName: value.userData.firstName,
+            lenderLastName: value.userData.lastName,
+            type: "loan",
+            desc: `${
+              value.userData.firstName
+            } spotted you ${requestAmount} on ${new Date().toLocaleDateString()}`,
+          });
       })
       .catch((error) => console.log(error.message));
     // Delete from lender's queue

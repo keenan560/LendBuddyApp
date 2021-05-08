@@ -38,44 +38,23 @@ if (!firebase.apps.length) {
 function PayDebt({ navigation }) {
   const value = useContext(UserContext);
   const [user, setUser] = useState(null);
-  const [id, setId] = useState([]);
   const [debts, setDebts] = useState([]);
 
-  const getDocId = async () => {
-    await firebase
-      .firestore()
-      .collection("users")
-      .where("email", "==", `${value.user.user.email}`)
-      .get()
-      .then(function (querySnapshot) {
-        querySnapshot.forEach(function (doc) {
-          // doc.data() is never undefined for query doc snapshots
-          console.log(doc.id, " => ", doc.data());
-          setId(doc.id);
-        });
-      })
-      .catch(function (error) {
-        console.log("Error getting documents: ", error);
-      });
-
+  useEffect(() => {
     firebase
       .firestore()
       .collection("users")
-      .doc(`${id}`)
+      .doc(`${value.userData.id}`)
       .collection("debts")
-      .orderBy("lender", "asc")
       .onSnapshot((snapshot) =>
         setDebts(
           snapshot.docs.map((doc) => ({
-            
+            id: doc.id,
+            data: doc.data(),
           }))
         )
       );
-  };
-
-  useEffect(() => {
-    getDocId();
-  }, [id]);
+  }, []);
 
   const totalDebt = (debts) => {
     let total = 0;
@@ -85,9 +64,10 @@ function PayDebt({ navigation }) {
 
     return total;
   };
+  console.log(debts);
   return (
     <View style={styles.container}>
-      <Text h4>Total Debt: ${debts.length > 0 ? totalDebt(debts) : 0}</Text>
+      <Text h4>Total Due: ${debts.length > 0 ? totalDebt(debts) : 0}</Text>
       <Text>Buddies:{debts ? debts.length : 0}</Text>
       <ScrollView>
         {debts.length ? (
@@ -95,8 +75,9 @@ function PayDebt({ navigation }) {
             <View>
               <Debt
                 key={id}
-                lender={data.lender}
-                amountBorrowed={data.amountBorrowed}
+                lender={data.lenderFirstName}
+                loanAmount={data.loanAmount}
+                balance={data.balance}
                 amountOwed={data.amountOwed}
                 originDate={data.originDate}
                 nextPaymentDate={data.nextPaymentDue}

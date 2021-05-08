@@ -33,29 +33,12 @@ function borrowerActivity({ navigation }) {
   const [id, setId] = useState([]);
   const [activities, setActivities] = useState([]);
 
-  const getDocId = async () => {
-    await firebase
-      .firestore()
-      .collection("users")
-      .where("email", "==", `${value.user.user.email}`)
-      .get()
-      .then(function (querySnapshot) {
-        querySnapshot.forEach(function (doc) {
-          // doc.data() is never undefined for query doc snapshots
-          console.log(doc.id, " => ", doc.data());
-          setId(doc.id);
-        });
-      })
-      .catch(function (error) {
-        console.log("Error getting documents: ", error);
-      });
-
+  useEffect(() => {
     firebase
       .firestore()
       .collection("users")
-      .doc(`${id}`)
-      .collection("borrowerActivity")
-      .orderBy("date", "desc")
+      .doc(`${value.userData.id}`)
+      .collection("borrowActivities")
       .onSnapshot((snapshot) =>
         setActivities(
           snapshot.docs.map((doc) => ({
@@ -64,12 +47,8 @@ function borrowerActivity({ navigation }) {
           }))
         )
       );
-  };
+  }, []);
 
-  useEffect(() => {
-    getDocId();
-  }, [id]);
-  console.log(id);
   return (
     <View style={styles.container}>
       <SearchBar
@@ -90,7 +69,7 @@ function borrowerActivity({ navigation }) {
               id={data.id}
               desc={data.desc}
               type={data.type}
-              lender={data.lender}
+              lender={data.lenderFirstName}
             />
           ))
         ) : (

@@ -8,9 +8,10 @@ function Debt({
   id,
   status,
   lender,
-  amountBorrowed,
+  category,
+  balance,
+  loanAmount,
   amountOwed,
-  originDate,
   nextPaymentDate,
   cb,
 }) {
@@ -32,9 +33,9 @@ function Debt({
           price={`$${amountOwed}`}
           info={[
             "Due: " + new Date(nextPaymentDate?.toDate()).toLocaleString(),
-            "Loan Amount: $" + amountBorrowed,
-            "Percent Paid:" +
-              Math.ceil(amountBorrowed - amountOwed) / amountBorrowed,
+            "Loan Amount: $" + loanAmount,
+            "Balance: $" + balance,
+            // "Percent Paid:" + Math.ceil(loanAmount - amountOwed) / loanAmount,
           ]}
           button={{
             title: status !== "late" ? "Make Payment" : " Request Extension",
