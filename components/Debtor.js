@@ -8,8 +8,10 @@ import { FontAwesome } from "@expo/vector-icons";
 function Debtor({
   navigation,
   borrower,
+  category,
   amountBorrowed,
-  amountOwed, 
+  amountOwed,
+  balance,
   originDate,
   nextPaymentDate,
   status,
@@ -36,26 +38,25 @@ function Debtor({
         title={borrower}
         price={`$${amountOwed}`}
         info={[
-          "Due: " + nextPaymentDate,
+          category,
+          "Due: " + new Date(nextPaymentDate?.toDate()).toLocaleDateString(),
           "Loan Amount: $" + amountBorrowed,
-          "Percent Paid:" +
-            parseFloat(
-              ((amountBorrowed - amountOwed) / amountBorrowed) * 100
-            ).toFixed(0) +
-            "%",
+          "Balance: $" + balance,
+          "Date of Origination: " +
+            new Date(originDate?.toDate()).toLocaleDateString(),
         ]}
         button={{
           title:
             (claimStatus === true && "Claim Filed") ||
-            (status === "Good" && "Good") ||
-            (status === "Extension" && "Extentsion") ||
-            (status === "Default" && "File a Claim "),
+            (status === "good" && "Good") ||
+            (status === "extension" && "Extentsion") ||
+            (status === "default" && "File a Claim "),
 
           icon:
             (claimStatus && "check-circle") ||
-            (status === "Good" && "attach-money") ||
-            (status === "Extension" && "access-time") ||
-            (status === "Default" && "gavel"),
+            (status === "good" && "attach-money") ||
+            (status === "extension" && "access-time") ||
+            (status === "default" && "gavel"),
           disabled: claimStatus ? true : false,
 
           onPress: () => {

@@ -59,7 +59,7 @@ function PayDebt({ navigation }) {
   const totalDebt = (debts) => {
     let total = 0;
     for (let i = 0; i < debts.length; i++) {
-      total += parseInt(debts[i].data.amountOwed);
+      total += parseFloat(debts[i].data.amountOwed);
     }
 
     return total;
@@ -67,7 +67,9 @@ function PayDebt({ navigation }) {
   console.log(debts);
   return (
     <View style={styles.container}>
-      <Text h4>Total Due: ${debts.length > 0 ? totalDebt(debts) : 0}</Text>
+      <Text h4>
+        Total Due: ${debts.length > 0 ? `${totalDebt(debts).toFixed(2)}` : 0}
+      </Text>
       <Text>Buddies:{debts ? debts.length : 0}</Text>
       <ScrollView>
         {debts.length ? (

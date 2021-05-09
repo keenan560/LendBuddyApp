@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Image,
   View,
@@ -8,67 +8,82 @@ import {
 } from "react-native";
 import { Text } from "react-native-elements";
 import Debtor from "./Debtor";
+import UserContext from "./context/userContext";
+import * as firebase from "firebase";
+
+// Optionally import the services that you want to use
+import "firebase/auth";
+// import "firebase/database";
+import "firebase/firestore";
+//import "firebase/functions";
+//import "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 function Debtors({ navigation }) {
-  const debts = [
-    {
-      id: 0,
-      borrower: "Gabriel",
-      amountBorrowed: 150,
-      amountOwed: 86.63,
-      originDate: "11/3/2020",
-      nextPaymentDue: "12/3/2020",
-      status: "Good",
-    },
-    {
-      id: 1,
-      borrower: "Aston",
-      amountBorrowed: 250,
-      amountOwed: 144.38,
-      originDate: "10/4/2020",
-      nextPaymentDue: "11/4/2020",
-      status: "Default",
-    },
-    {
-      id: 2,
-      borrower: "Lucy",
-      amountBorrowed: 50,
-      amountOwed: 28.88,
-      originDate: "11/3/2020",
-      nextPaymentDue: "12/3/2020",
-      status: "Extension",
-    },
-    // {
-    //   id: 2,
-    //   borrower: "Maggie",
-    //   amountBorrowed: 125,
-    //   amountOwed: 86,
-    //   originDate: "11/3/2020",
-    //   nextPaymentDue: "Yesterday",
-    //   status: "Late",
-    // },
-  ];
-  let debtTotal = 0;
-  const total = debts.map((debt) => (debtTotal += debt.amountOwed));
+  const [debtors, setDebtors] = useState([]);
+  const value = useContext(UserContext);
+  useEffect(() => {
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .collection("debtors")
+      .onSnapshot((snapshot) => {
+        setDebtors(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        );
+      });
+  }, []);
 
-  function currencyFormat(num) {
-    return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-  }
+  const totalDebt = (debtors) => {
+    let total = 0;
+    for (let i = 0; i < debtors.length; i++) {
+      total += parseFloat(debtors[i].data.amountOwed);
+    }
+
+    return total;
+  };
+
+  // function currencyFormat(num) {
+  //   return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+  // }
 
   return (
     <View style={styles.container}>
       <ScrollView>
-        <Text h4>Total Spotted: {currencyFormat(debtTotal)}</Text>
-        <Text>Buddies: {debts.length}</Text>
-        {debts.map((debt, index) => (
+        <Text h4>
+          Total Owed:{" "}
+          {debtors.length > 0 ? `$${totalDebt(debtors).toFixed(2)}` : 0}
+        </Text>
+        <Text>Buddies: {debtors.length}</Text>
+        {debtors.map(({ id, data }) => (
           <Debtor
-            key={index}
-            borrower={debt.borrower}
-            amountBorrowed={debt.amountBorrowed}
-            amountOwed={debt.amountOwed}
-            originDate={debt.originDate}
-            nextPaymentDate={debt.nextPaymentDue}
-            status={debt.status}
+            key={id}
+            borrower={data.firstName}
+            amountBorrowed={data.loanAmount}
+            amountOwed={data.amountOwed}
+            balance={data.balance}
+            category={data.category}
+            originDate={data.originDate}
+            nextPaymentDate={data.nextPaymentDue}
+            status={data.status}
             navigation={navigation}
           />
         ))}

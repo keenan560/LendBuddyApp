@@ -7,15 +7,15 @@ import { FontAwesome5 } from "@expo/vector-icons";
 
 function Activity({ navigation, id, desc, type, lender }) {
   const typeColor = (type) => {
-    if (type === "loan" || type === "Spot" || type === "Revenue") {
+    if (type === "loan" || type === "spot" || type === "revenue") {
       return "#16AA65";
     }
 
-    if (type === "payment" || type === "Income") {
+    if (type === "payment" || type === "income") {
       return "#FCBD00";
     }
 
-    if (type === "Filed Claim") {
+    if (type === "filed claim") {
       return "#FF6666";
     }
   };
@@ -34,20 +34,20 @@ function Activity({ navigation, id, desc, type, lender }) {
                 color={typeColor(type)}
               />
             )) ||
-            (type === "Income" && (
+            (type === "income" && (
               <FontAwesome5 name="coins" size={24} color={typeColor(type)} />
             )) ||
-            (type === "Revenue" && (
+            (type === "revenue" && (
               <FontAwesome5
                 name="money-bill-wave"
                 size={24}
                 color={typeColor(type)}
               />
             )) ||
-            (type === "Filed Claim" && (
+            (type === "filed claim" && (
               <FontAwesome name="legal" size={24} color={typeColor(type)} />
             )) ||
-            (type === "Spot" && (
+            (type === "spot" && (
               <FontAwesome5 name="seedling" size={24} color={typeColor(type)} />
             ))}
         </Text>

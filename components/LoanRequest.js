@@ -40,8 +40,18 @@ function LoanRequest({
   borrowerID,
 }) {
   const [visible, setVisible] = useState(true);
+  const [user, setUser] = useState(null);
   const value = useContext(UserContext);
-  console.log("the loan Id is " + id);
+
+  useEffect(() => {
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .onSnapshot((snapshot) => {
+        setUser(snapshot.data());
+      });
+  }, []);
 
   const toggleOverlay = () => {
     setVisible(!visible);
@@ -85,6 +95,7 @@ function LoanRequest({
         status: "good",
       })
       .then((docRef) => {
+        // add to borrower's debts collection
         firebase
           .firestore()
           .collection("users")
@@ -117,6 +128,30 @@ function LoanRequest({
             status: "good",
           });
       })
+      .then(() => {
+        // increase lender's totalLent amount by the requestAmount
+        firebase
+          .firestore()
+          .collection("users")
+          .doc(`${value.userData.id}`)
+          .update({
+            totalLent: user.totalLent + requestAmount,
+          });
+
+        // add to lender's activities
+
+        firebase
+          .firestore()
+          .collection("users")
+          .doc(`${value.userData.id}`)
+          .collection("lenderActivities")
+          .add({
+            borrowerFirstName: firstName,
+            borrowerLastName: lastName,
+            type: "spot",
+            desc: `You lent $${requestAmount} to ${firstName} on ${new Date().toLocaleDateString()}`,
+          });
+      })
       .catch((error) => console.log(error.message));
     // update borrower's request with approve
     await firebase
@@ -140,7 +175,7 @@ function LoanRequest({
             type: "loan",
             desc: `${
               value.userData.firstName
-            } spotted you ${requestAmount} on ${new Date().toLocaleDateString()}`,
+            } spotted you $${requestAmount} on ${new Date().toLocaleDateString()}`,
           });
       })
       .catch((error) => console.log(error.message));

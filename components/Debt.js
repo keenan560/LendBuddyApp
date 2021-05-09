@@ -9,18 +9,13 @@ function Debt({
   status,
   lender,
   category,
+  originDate,
   balance,
   loanAmount,
   amountOwed,
   nextPaymentDate,
   cb,
 }) {
-  // const statusColor = status => {
-  //   if (status !== "Late")  {
-  //     return "red"
-  //   }
-  // }
-
   const requestExt = () => {};
 
   return (
@@ -32,10 +27,11 @@ function Debt({
           title={lender}
           price={`$${amountOwed}`}
           info={[
-            "Due: " + new Date(nextPaymentDate?.toDate()).toLocaleString(),
+            "Due: " + new Date(nextPaymentDate?.toDate()).toLocaleDateString(),
             "Loan Amount: $" + loanAmount,
             "Balance: $" + balance,
-            // "Percent Paid:" + Math.ceil(loanAmount - amountOwed) / loanAmount,
+            "Date of Origination: " +
+              new Date(originDate?.toDate()).toLocaleDateString(),
           ]}
           button={{
             title: status !== "late" ? "Make Payment" : " Request Extension",
