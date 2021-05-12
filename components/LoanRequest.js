@@ -74,13 +74,14 @@ function LoanRequest({
       .collection("debtors")
       .add({
         borrowerID: borrowerID,
+        lenderID: value.userData.id,
         firstName: firstName,
         lastName: lastName,
         category: category,
         city: city,
         state: state,
         loanAmount: requestAmount,
-        balance: requestAmount,
+        balance: requestAmount + requestAmount * 0.12,
         amountOwed: (
           parseInt(requestAmount / 2) +
           parseFloat(parseInt(requestAmount / 2) * 0.12) +
@@ -103,15 +104,18 @@ function LoanRequest({
           .collection("debts")
           .doc(`${docRef.id}`)
           .set({
+            id: docRef.id,
             lenderFirstName: value.userData.firstName,
             lenderLastName: value.userData.lastName,
+            lenderID: value.userData.id,
+            borrowerID: borrowerID,
             firstName: firstName,
             lastName: lastName,
             category: category,
             city: city,
             state: state,
             loanAmount: requestAmount,
-            balance: requestAmount,
+            balance: requestAmount + requestAmount * 0.12,
             amountOwed: (
               parseInt(requestAmount / 2) +
               parseFloat(parseInt(requestAmount / 2) * 0.12) +
@@ -297,11 +301,11 @@ function LoanRequest({
               ["#F7B801", 0.4],
               ["#A30000", 0.2],
             ]}
-            // onComplete={toggleOverlay}
+            // onComplete={denyRequest}
             onComplete={() => {
               // do your stuff here
               denyRequest();
-              return [false]; // repeat animation in 1.5 seconds
+              return [true, 1000]; // repeat animation in 1.5 seconds
             }}
           >
             {({ remainingTime, animatedColor }) => (

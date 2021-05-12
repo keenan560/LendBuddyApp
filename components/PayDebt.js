@@ -77,6 +77,8 @@ function PayDebt({ navigation }) {
             <View>
               <Debt
                 key={id}
+                id={id}
+                lenderID={data.lenderID}
                 lender={data.lenderFirstName}
                 loanAmount={data.loanAmount}
                 balance={data.balance}

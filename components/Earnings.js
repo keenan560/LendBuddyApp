@@ -70,7 +70,7 @@ function Earnings({ navigation }) {
       />
       <ScrollView style={{ flex: 1, width: "100%" }}>
         {payments.map((payment, index) => (
-          <Activity key={index} type="Revenue" desc={payment.desc} />
+          <Activity key={index} type="revenue" desc={payment.desc} />
         ))}
       </ScrollView>
     </View>
