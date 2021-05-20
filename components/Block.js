@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
 import { View, StyleSheet, Text } from "react-native";
-import { SearchBar } from "react-native-elements";
+import { SearchBar, Overlay } from "react-native-elements";
 import { ScrollView } from "react-native-gesture-handler";
 import { ListItem, Avatar, Button } from "react-native-elements";
 import UserContext from "./context/userContext";
@@ -10,6 +10,7 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
+import { event } from "react-native-reanimated";
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -32,31 +33,16 @@ function Block({ navigation }) {
   const [search, setSearch] = useState("");
   const value = useContext(UserContext);
   const [list, setList] = useState([]);
-  const [uid, setUid] = useState([]);
-
-  const getDocId = async () => {
-    await firebase
-      .firestore()
-      .collection("users")
-      .where("email", "==", `${value.user.user.email}`)
-      .get()
-      .then(function (querySnapshot) {
-        querySnapshot.forEach(function (doc) {
-          // doc.data() is never undefined for query doc snapshots
-          console.log(doc.id, " => ", doc.data());
-          setUid(doc.id);
-        });
-      })
-      .catch(function (error) {
-        console.log("Error getting documents: ", error);
-      });
-
+  const [visible, setVisible] = useState(false);
+  const [results, setResults] = useState([]);
+  const [filter, setFilter] = useState([]);
+  useEffect(() => {
+    // on loading pull all blocked users
     firebase
       .firestore()
       .collection("users")
-      .doc(`${uid}`)
+      .doc(`${value.userData.id}`)
       .collection("blockList")
-      .orderBy("name", "asc")
       .onSnapshot((snapshot) =>
         setList(
           snapshot.docs.map((doc) => ({
@@ -65,11 +51,21 @@ function Block({ navigation }) {
           }))
         )
       );
-  };
+  }, []);
 
   useEffect(() => {
-    getDocId();
-  }, [uid]);
+    firebase
+      .firestore()
+      .collection("users")
+      .onSnapshot((snapshot) =>
+        setFilter(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        )
+      );
+  }, []);
 
   // Unblock someone
   //   const unblock = (event) => {
@@ -91,9 +87,109 @@ function Block({ navigation }) {
 
   //   };
 
-  
+  const toggleOverlay = () => {
+    setVisible(!visible);
+  };
+  const findUsers = async () => {
+    await firebase
+      .firestore()
+      .collection("users")
+      .where("firstName", "array-contains", `${search}`)
+      .onSnapshot((snapshot) =>
+        setResults(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        )
+      );
+    toggleOverlay();
+  };
+
+  const blockUser = async (id, data) => {
+    await firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .collection("blockList")
+      .doc(`${id}`)
+      .set({
+        id: id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        city: data.city,
+        state: data.state,
+      });
+      
+      
+  };
+
+  console.log(list);
   return (
     <View style={styles.container}>
+      <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
+        <ScrollView style={{ maxHeight: 325 }}>
+          <View style={{ width: 325 }}>
+            {filter.length > 0 ? (
+              filter
+                .filter((user) => {
+                  if (search == "") {
+                    return user;
+                  }
+
+                  if (
+                    user.data.firstName
+                      .toLowerCase()
+                      .includes(search.toLocaleLowerCase())
+                  ) {
+                    return user;
+                  }
+                  if (
+                    user.data.lastName
+                      .toLowerCase()
+                      .includes(search.toLocaleLowerCase())
+                  ) {
+                    return user;
+                  }
+                })
+                .map(({ id, data }) => (
+                  <ListItem bottomDivider key={id}>
+                    <Avatar
+                      source={{
+                        uri: `${data.firstName[0]}${data.lastName[0]}`,
+                      }}
+                      title={`${data.firstName[0]}${data.lastName[0]}`}
+                      rounded
+                      size="medium"
+                    />
+                    <ListItem.Content>
+                      <ListItem.Title
+                        style={{ fontWeight: "bold", fontSize: 20 }}
+                      >
+                        {`${data.firstName} ${data.lastName}`}
+                      </ListItem.Title>
+                      <ListItem.Subtitle>{`${data.city}, ${data.state}`}</ListItem.Subtitle>
+                    </ListItem.Content>
+                    <Button
+                      title="Block"
+                      onPress={() => blockUser(id, data)}
+                      type="solid"
+                      titleStyle={{ fontWeight: "bold" }}
+                    />
+                  </ListItem>
+                ))
+            ) : (
+              <Text style={{ textAlign: "center" }}>No Users</Text>
+            )}
+          </View>
+        </ScrollView>
+        <Button
+          title={"Close"}
+          style={{ marginBottom: 0, marginTop: 30 }}
+          onPress={toggleOverlay}
+        />
+      </Overlay>
       <ScrollView>
         <SearchBar
           lightTheme
@@ -104,23 +200,28 @@ function Block({ navigation }) {
           inputStyle={{ backgroundColor: "#fff" }}
           inputContainerStyle={{ backgroundColor: "#fff" }}
           containerStyle={{ backgroundColor: "#fff" }}
+          onSubmitEditing={findUsers}
         />
+
         {list.map(({ id, data }) => (
           <ListItem bottomDivider key={id}>
             <Avatar
-              source={{ uri: data.avatar_url }}
-              title={data.name[0]}
+              source={{
+                uri: `${data.firstName[0]}${data.lastName[0]}`,
+              }}
+              title={`${data.firstName[0]}${data.lastName[0]}`}
               rounded
+              size="medium"
             />
             <ListItem.Content>
               <ListItem.Title style={{ fontWeight: "bold", fontSize: 20 }}>
-                {data.name}
+                {`${data.firstName} ${data.lastName}`}
               </ListItem.Title>
-              <ListItem.Subtitle>{data.subtitle}</ListItem.Subtitle>
+              <ListItem.Subtitle>{`${data.city}, ${data.state}`}</ListItem.Subtitle>
             </ListItem.Content>
             <Button
               title="Unblock"
-              onPress={() => alert("user is unblocked")}
+              onPress={""}
               type="solid"
               titleStyle={{ fontWeight: "bold" }}
             />

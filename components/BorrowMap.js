@@ -15,7 +15,6 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
-import { set } from "react-native-reanimated";
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -50,21 +49,6 @@ export default function BorrowMap({ navigation }) {
   const [errorMsg, setErrorMsg] = useState(null);
   const [docId, setDocId] = useState("");
   const [user, setUser] = useState(null);
-
-  // useEffect(async () => {
-  //   // Code to deny the request if the lender does not approve or doesn;'t respond
-  //   if (visible) {
-  //     await setTimeout(() => {
-  //       setVisible(false);
-  //     }, 32000);
-
-  //     await setDenied(true);
-
-  //     setTimeout(() => {
-  //       setDenied(false);
-  //     }, 3000);
-  //   }
-  // }, []);
 
   useEffect(() => {
     firebase
