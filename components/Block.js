@@ -10,7 +10,6 @@ import * as firebase from "firebase";
 import "firebase/auth";
 // import "firebase/database";
 import "firebase/firestore";
-import { event } from "react-native-reanimated";
 //import "firebase/functions";
 //import "firebase/storage";
 
@@ -54,6 +53,7 @@ function Block({ navigation }) {
   }, []);
 
   useEffect(() => {
+    // on loading pull all users
     firebase
       .firestore()
       .collection("users")
@@ -66,26 +66,6 @@ function Block({ navigation }) {
         )
       );
   }, []);
-
-  // Unblock someone
-  //   const unblock = (event) => {
-  //     event.preventDefault();
-  // if () {
-
-  //     firebase
-  //       .firestore()
-  //       .collection("users")
-  //       .doc(`${uid}`)
-  //       .collection("blocklist")
-  //       .doc(`${key}`)
-  //       .delete()
-  //       .then((message) => console.log("user unblocked"))
-  //       .catch(function (error) {
-  //         console.log("Error getting documents: ", error);
-  //       });
-  // }
-
-  //   };
 
   const toggleOverlay = () => {
     setVisible(!visible);
@@ -121,11 +101,23 @@ function Block({ navigation }) {
         city: data.city,
         state: data.state,
       });
-      
-      
+
+    return filter.splice(id, 1);
   };
 
-  console.log(list);
+  const unBlockUser = (id, data) => {
+    firebase
+      .firestore()
+      .collection("users")
+      .doc(`${value.userData.id}`)
+      .collection("blockList")
+      .doc(`${id}`)
+      .delete()
+      .then(() => alert(data.firstName + " is unblocked."))
+      .catch((error) => alert(error.message));
+  };
+
+  console.log(filter);
   return (
     <View style={styles.container}>
       <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
@@ -221,7 +213,7 @@ function Block({ navigation }) {
             </ListItem.Content>
             <Button
               title="Unblock"
-              onPress={""}
+              onPress={(event) => unBlockUser(id, data)}
               type="solid"
               titleStyle={{ fontWeight: "bold" }}
             />
