@@ -80,7 +80,8 @@ function Dashboard({ navigation }) {
               rounded
               title={user ? `${user.firstName[0] + user.lastName[0]}` : ".."}
               source={{
-                uri: user ? `${user.firstName[0] + user.lastName[0]}` : "..",
+                // uri: user ? `${user.firstName[0] + user.lastName[0]}` : "..",
+                uri: "https://i.pinimg.com/originals/77/a7/a1/77a7a150b7752ae3bf8a73c58d490881.png",
               }}
               onPress={logOut}
             ></Avatar>
