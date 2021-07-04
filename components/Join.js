@@ -72,6 +72,8 @@ function Join({ navigation }) {
             mobile: mobile,
             totalDebt: 0,
             totalLent: 0,
+            paystub1: false,
+            paystub2: false,
             activeLender: false,
             street1: street1,
             street2: street2,

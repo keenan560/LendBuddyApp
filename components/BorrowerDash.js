@@ -2,6 +2,7 @@ import React, { useEffect, useContext, useState } from "react";
 import { StyleSheet, Text, View, Animated } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
 import { AntDesign } from "@expo/vector-icons";
 import UserContext from "./context/userContext";
@@ -32,7 +33,7 @@ if (!firebase.apps.length) {
 
 function BorrowerDash({ navigation }) {
   const value = useContext(UserContext);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({});
 
   useEffect(() => {
     firebase
@@ -53,7 +54,7 @@ function BorrowerDash({ navigation }) {
         setUser(snapshot.data());
       });
   }, []);
-
+  console.log(user.totalDebt);
   return (
     <ScrollView>
       <View style={styles.container}>
@@ -139,8 +140,8 @@ function BorrowerDash({ navigation }) {
             <Text style={styles.iconText}>Profile</Text>
           </View>
           <View style={styles.iconSpace}>
-            <MaterialIcons
-              name="payment"
+            <MaterialCommunityIcons
+              name="bank"
               size={60}
               color="#28a745"
               onPress={() =>
@@ -149,7 +150,7 @@ function BorrowerDash({ navigation }) {
                 })
               }
             />
-            <Text style={styles.iconText}>Card Info</Text>
+            <Text style={styles.iconText}>Bank Info</Text>
           </View>
           <View style={styles.iconSpace}>
             <FontAwesome
@@ -171,15 +172,33 @@ function BorrowerDash({ navigation }) {
           </View>
         </View>
         <View style={styles.row}>
-          <View style={styles.iconSpace}>
-            <FontAwesome
-              name="search"
-              size={60}
-              color="#28a745"
-              onPress={() => navigation.navigate("Search", { name: "Search" })}
-            />
-            <Text style={styles.iconText}>Search</Text>
-          </View>
+          {user && user.totalDebt < 250 ? (
+            <View style={styles.iconSpace}>
+              <FontAwesome
+                name="search"
+                size={60}
+                color="#28a745"
+                onPress={() =>
+                  navigation.navigate("Search", { name: "Search" })
+                }
+              />
+              <Text style={styles.iconText}>Search</Text>
+            </View>
+          ) : (
+            <View>
+              <MaterialIcons
+                name="warning"
+                size={65}
+                color="lightgray"
+                onPress={() =>
+                  alert(
+                    "Either you have reached your limit of $250 or you need to ensure your pay stub(s) are up to date."
+                  )
+                }
+              />
+              <Text style={styles.iconText}>Search</Text>
+            </View>
+          )}
         </View>
       </View>
     </ScrollView>

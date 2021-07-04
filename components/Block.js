@@ -50,6 +50,8 @@ function Block({ navigation }) {
           }))
         )
       );
+
+      
   }, []);
 
   useEffect(() => {
@@ -65,6 +67,8 @@ function Block({ navigation }) {
           }))
         )
       );
+      
+
   }, []);
 
   const toggleOverlay = () => {
@@ -121,7 +125,11 @@ function Block({ navigation }) {
   return (
     <View style={styles.container}>
       <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
-        <ScrollView style={{ maxHeight: 325 }}>
+        <ScrollView
+          style={{ maxHeight: 325 }}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+        >
           <View style={{ width: 325 }}>
             {filter.length > 0 ? (
               filter

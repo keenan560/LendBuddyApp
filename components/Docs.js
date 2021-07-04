@@ -9,7 +9,7 @@ import { AntDesign } from "@expo/vector-icons";
 // Claims that you filed
 
 function Docs({ navigation }) {
-  const [payStubStatus1, setPayStubStatus1] = useState(true);
+  const [payStubStatus1, setPayStubStatus1] = useState(false);
   const [payStubStatus2, setPayStubStatus2] = useState(false);
 
   return (
@@ -20,7 +20,7 @@ function Docs({ navigation }) {
           <ListItem.Title style={{ fontWeight: "bold", fontSize: 16 }}>
             Paystub 1
           </ListItem.Title>
-          <ListItem.Subtitle>Completed</ListItem.Subtitle>
+          <ListItem.Subtitle>Required</ListItem.Subtitle>
         </ListItem.Content>
         {payStubStatus1 ? (
           <FontAwesome5 name="check-circle" size={24} color="#28a745" />
@@ -29,6 +29,7 @@ function Docs({ navigation }) {
             title="Upload"
             type="solid"
             titleStyle={{ fontWeight: "bold" }}
+            onPress={() => navigation.navigate("Camera", { name: "Camera" })}
           />
         )}
       </ListItem>
