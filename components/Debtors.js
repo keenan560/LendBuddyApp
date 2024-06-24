@@ -1,23 +1,13 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-  Image,
-  View,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 import { Text } from "react-native-elements";
 import Debtor from "./Debtor";
 import UserContext from "./context/userContext";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, collection, doc, onSnapshot } from "firebase/firestore";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-//import "firebase/functions";
-//import "firebase/storage";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -29,41 +19,38 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function Debtors({ navigation }) {
   const [debtors, setDebtors] = useState([]);
   const value = useContext(UserContext);
+
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("debtors")
-      .onSnapshot((snapshot) => {
-        setDebtors(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        );
-      });
-  }, []);
+    const debtorsCollectionRef = collection(
+      doc(firestore, "users", value.userData.id),
+      "debtors"
+    );
+    const unsubscribe = onSnapshot(debtorsCollectionRef, (snapshot) => {
+      setDebtors(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }))
+      );
+    });
+    return () => unsubscribe();
+  }, [value.userData.id]);
 
   const totalDebt = (debtors) => {
     let total = 0;
     for (let i = 0; i < debtors.length; i++) {
       total += parseFloat(debtors[i].data.amountOwed);
     }
-
     return total;
   };
-
-  // function currencyFormat(num) {
-  //   return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-  // }
 
   return (
     <View style={styles.container}>

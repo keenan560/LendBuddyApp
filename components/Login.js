@@ -1,16 +1,11 @@
 // @refresh state
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import { StyleSheet, Text, View, TextInput } from "react-native";
 import { Button } from "react-native-elements";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 import UserContext from "./context/userContext";
-
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-//import "firebase/functions";
-//import "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
@@ -23,9 +18,10 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function Login({ navigation }) {
   const [email, setEmail] = useState("");
@@ -33,17 +29,13 @@ function Login({ navigation }) {
   const [loading, setLoading] = useState(false);
   const value = useContext(UserContext);
 
-  const signIn = (event) => {
+  const signIn = () => {
     setLoading(true);
-    firebase
-      .auth()
-      .signInWithEmailAndPassword(email, password)
-      .then((user) => {
-        // Signed in
-        // ...
-
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
         value.login(user);
-        value.getUserData(user.user.uid);
+        value.getUserData(user.uid);
 
         setTimeout(() => {
           setLoading(false);
@@ -51,9 +43,7 @@ function Login({ navigation }) {
         }, 1000);
       })
       .catch((error) => {
-        var errorCode = error.code;
-        var errorMessage = error.message;
-        alert(errorMessage);
+        alert(error.message);
         setLoading(false);
       });
   };
@@ -113,18 +103,15 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     bottom: 55,
   },
-
   lendColor: {
     color: "#28a745",
   },
-
   slogan: {
     color: "#28a745",
     bottom: 53,
     fontSize: 16,
     fontWeight: "normal",
   },
-
   input: {
     width: 375,
     fontSize: 20,
@@ -134,10 +121,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     height: 50,
     borderWidth: 0.5,
-    borderTopColor: "gray",
-    borderBottomColor: "gray",
-    borderRightColor: "gray",
-    borderLeftColor: "gray",
+    borderColor: "gray",
     borderRadius: 5,
   },
   button: {
@@ -150,23 +134,15 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     borderRadius: 5,
   },
-
-  buttonText: {
-    color: "white",
-    fontWeight: "bold",
-  },
-
   row: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   left: {
     marginLeft: 0,
     marginRight: 150,
     color: "gray",
   },
-
   right: {
     marginRight: 0,
     color: "gray",

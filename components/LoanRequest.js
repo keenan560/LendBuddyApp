@@ -1,18 +1,25 @@
 import React, { useState, useEffect, useContext } from "react";
 import { View, Animated } from "react-native";
-import { Text, Button, Overlay, ListItem, Avatar } from "react-native-elements";
+import { Text, Avatar, Overlay } from "react-native-elements";
 import { CountdownCircleTimer } from "react-native-countdown-circle-timer";
 import { FontAwesome } from "@expo/vector-icons";
 import UserContext from "./context/userContext";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  onSnapshot,
+  collection,
+  addDoc,
+  deleteDoc,
+  setDoc,
+  serverTimestamp,
+  getDoc,
+} from "firebase/firestore";
 
-//Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-
-//import "firebase/functions";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -24,9 +31,10 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function LoanRequest({
   firstName,
@@ -36,43 +44,46 @@ function LoanRequest({
   requestAmount,
   state,
   id,
-  cb,
   borrowerID,
+  navigation,
 }) {
   const [visible, setVisible] = useState(true);
   const [user, setUser] = useState(null);
   const value = useContext(UserContext);
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .onSnapshot((snapshot) => {
-        setUser(snapshot.data());
-      });
-  }, []);
+    const userDocRef = doc(firestore, "users", value.userData.id);
+    const unsubscribe = onSnapshot(userDocRef, (snapshot) => {
+      setUser(snapshot.data());
+    });
+    return () => unsubscribe();
+  }, [value.userData.id]);
 
   const toggleOverlay = () => {
     setVisible(!visible);
   };
-  function nextweek() {
-    var today = new Date();
-    var nextweek = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate() + 7
-    );
-    return nextweek;
-  }
+
+  const nextweek = () => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
+  };
+
   const approveRequest = async () => {
-    // add to Lender's debtor collection
-    await firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("debtors")
-      .add({
+    try {
+      if (!user) {
+        throw new Error("User data is not loaded yet.");
+      }
+
+      const lenderDocRef = doc(firestore, "users", value.userData.id);
+      const lenderDebtCollectionRef = collection(lenderDocRef, "debtors");
+      const borrowerDocRef = doc(firestore, "users", borrowerID);
+      const borrowerDebtCollectionRef = collection(borrowerDocRef, "debts");
+      const lenderActivityCollectionRef = collection(
+        lenderDocRef,
+        "lenderActivities"
+      );
+
+      const newDebtDocRef = await addDoc(lenderDebtCollectionRef, {
         borrowerID: borrowerID,
         lenderID: value.userData.id,
         firstName: firstName,
@@ -90,145 +101,99 @@ function LoanRequest({
         principal: parseInt(requestAmount / 2),
         interest: parseFloat(parseInt(requestAmount / 2) * 0.12).toFixed(2),
         lbRevenue: parseFloat(parseInt(requestAmount / 2) * 0.035).toFixed(2),
-        originDate: firebase.firestore.FieldValue.serverTimestamp(),
+        originDate: serverTimestamp(),
         nextPaymentDue: nextweek(),
-        timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
+        timeStamp: serverTimestamp(),
         status: "good",
-      })
-      .then((docRef) => {
-        // add to borrower's debts collection
-        firebase
-          .firestore()
-          .collection("users")
-          .doc(`${borrowerID}`)
-          .collection("debts")
-          .doc(`${docRef.id}`)
-          .set({
-            id: docRef.id,
-            lenderFirstName: value.userData.firstName,
-            lenderLastName: value.userData.lastName,
-            lenderID: value.userData.id,
-            borrowerID: borrowerID,
-            firstName: firstName,
-            lastName: lastName,
-            category: category,
-            city: city,
-            state: state,
-            loanAmount: requestAmount,
-            balance: requestAmount + requestAmount * 0.12,
-            amountOwed: (
-              parseInt(requestAmount / 2) +
-              parseFloat(parseInt(requestAmount / 2) * 0.12) +
-              parseFloat(parseInt(requestAmount / 2) * 0.035)
-            ).toFixed(2),
-            principal: parseInt(requestAmount / 2),
-            interest: parseFloat(parseInt(requestAmount / 2) * 0.12).toFixed(2),
-            lbRevenue: parseFloat(parseInt(requestAmount / 2) * 0.035).toFixed(
-              2
-            ),
-            originDate: firebase.firestore.FieldValue.serverTimestamp(),
-            nextPaymentDue: nextweek(),
-            timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
-            status: "good",
-          });
-      })
-      .then(() => {
-        // increase lender's totalLent amount by the requestAmount
-        firebase
-          .firestore()
-          .collection("users")
-          .doc(`${value.userData.id}`)
-          .update({
-            totalLent: user.totalLent + requestAmount,
-          });
-
-        // add to lender's activities
-
-        firebase
-          .firestore()
-          .collection("users")
-          .doc(`${value.userData.id}`)
-          .collection("lenderActivities")
-          .add({
-            borrowerFirstName: firstName,
-            borrowerLastName: lastName,
-            type: "spot",
-            desc: `You lent $${requestAmount} to ${firstName} on ${new Date().toLocaleDateString()}`,
-          });
-      })
-      .catch((error) => console.log(error.message));
-    // update borrower's request with approve
-    await firebase
-      .firestore()
-      .collection("users")
-      .doc(`${borrowerID}`)
-      .collection("results")
-      .doc(`${id}`)
-      .update({
-        decision: "approved",
-      })
-      .then(() => {
-        firebase
-          .firestore()
-          .collection("users")
-          .doc(`${borrowerID}`)
-          .collection("borrowActivities")
-          .add({
-            lenderFirstName: value.userData.firstName,
-            lenderLastName: value.userData.lastName,
-            type: "loan",
-            desc: `${
-              value.userData.firstName
-            } spotted you $${requestAmount} on ${new Date().toLocaleDateString()}`,
-          });
-      })
-      .catch((error) => console.log(error.message));
-    // Delete from lender's queue
-    await firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("requests")
-      .doc(`${id}`)
-      .delete()
-      .then(() => {
-        console.log("Document successfully deleted!");
-      })
-      .catch((error) => {
-        console.error("Error removing document: ", error);
       });
 
-    toggleOverlay();
+      await setDoc(doc(borrowerDebtCollectionRef, newDebtDocRef.id), {
+        id: newDebtDocRef.id,
+        lenderFirstName: value.userData.firstName,
+        lenderLastName: value.userData.lastName,
+        lenderID: value.userData.id,
+        borrowerID: borrowerID,
+        firstName: firstName,
+        lastName: lastName,
+        category: category,
+        city: city,
+        state: state,
+        loanAmount: requestAmount,
+        balance: requestAmount + requestAmount * 0.12,
+        amountOwed: (
+          parseInt(requestAmount / 2) +
+          parseFloat(parseInt(requestAmount / 2) * 0.12) +
+          parseFloat(parseInt(requestAmount / 2) * 0.035)
+        ).toFixed(2),
+        principal: parseInt(requestAmount / 2),
+        interest: parseFloat(parseInt(requestAmount / 2) * 0.12).toFixed(2),
+        lbRevenue: parseFloat(parseInt(requestAmount / 2) * 0.035).toFixed(2),
+        originDate: serverTimestamp(),
+        nextPaymentDue: nextweek(),
+        timeStamp: serverTimestamp(),
+        status: "good",
+      });
+
+      await updateDoc(lenderDocRef, {
+        totalLent: user.totalLent + requestAmount,
+      });
+
+      await addDoc(lenderActivityCollectionRef, {
+        borrowerFirstName: firstName,
+        borrowerLastName: lastName,
+        type: "spot",
+        desc: `You lent $${requestAmount} to ${firstName} on ${new Date().toLocaleDateString()}`,
+      });
+
+      const resultDocRef = doc(firestore, "users", borrowerID, "results", id);
+      const resultDocSnap = await getDoc(resultDocRef);
+
+      if (resultDocSnap.exists()) {
+        await updateDoc(resultDocRef, {
+          decision: "approved",
+        });
+
+        await addDoc(collection(borrowerDocRef, "borrowActivities"), {
+          lenderFirstName: value.userData.firstName,
+          lenderLastName: value.userData.lastName,
+          type: "loan",
+          desc: `${
+            value.userData.firstName
+          } spotted you $${requestAmount} on ${new Date().toLocaleDateString()}`,
+        });
+
+        await deleteDoc(doc(lenderDocRef, "requests", id));
+      } else {
+        console.log("No such document!");
+      }
+
+      toggleOverlay();
+    } catch (error) {
+      console.error(error.message);
+    }
   };
 
   const denyRequest = async () => {
-    // update borrower's request with deny
-    await firebase
-      .firestore()
-      .collection("users")
-      .doc(`${borrowerID}`)
-      .collection("results")
-      .doc(`${id}`)
-      .update({
-        decision: "denied",
-      })
-      .catch((error) => console.log(error.message));
-    // Delete from lender's queue
-    await firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("requests")
-      .doc(`${id}`)
-      .delete()
-      .then(() => {
-        console.log("Document successfully deleted!");
-      })
-      .catch((error) => {
-        console.error("Error removing document: ", error);
-      });
+    try {
+      const resultDocRef = doc(firestore, "users", borrowerID, "results", id);
+      const resultDocSnap = await getDoc(resultDocRef);
 
-    toggleOverlay();
+      if (resultDocSnap.exists()) {
+        await updateDoc(resultDocRef, {
+          decision: "denied",
+        });
+
+        await deleteDoc(
+          doc(firestore, "users", value.userData.id, "requests", id)
+        );
+      } else {
+        console.log("No such document!");
+      }
+
+      toggleOverlay();
+    } catch (error) {
+      console.error(error.message);
+    }
   };
 
   return (
@@ -248,12 +213,8 @@ function LoanRequest({
           }}
         >
           <Avatar
-            // source={{
-            //   uri:
-            //     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnbyQ9BrRqMbn7NeiM0yRfqAEteiruMHVKXA&usqp=CAU",
-            // }}
             source={{
-              uri: "nothing",
+              uri: "https://i.pinimg.com/originals/77/a7/a1/77a7a150b7752ae3bf8a73c58d490881.png",
             }}
             size={100}
             rounded
@@ -291,7 +252,6 @@ function LoanRequest({
               onPress={denyRequest}
             />
           </View>
-          {/* Timer */}
           <CountdownCircleTimer
             isPlaying
             size={90}
@@ -301,9 +261,7 @@ function LoanRequest({
               ["#F7B801", 0.4],
               ["#A30000", 0.2],
             ]}
-            // onComplete={denyRequest}
             onComplete={() => {
-              // do your stuff here
               denyRequest();
               return [true, 1000]; // repeat animation in 1.5 seconds
             }}

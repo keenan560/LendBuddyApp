@@ -4,15 +4,12 @@ import { Card, ListItem, Button, Avatar } from "react-native-elements";
 import * as DocumentPicker from "expo-document-picker";
 import Icon from "react-native-vector-icons/FontAwesome";
 import UserContext from "./context/userContext";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes } from "firebase/storage";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-//import "firebase/functions";
-//import "firebase/storage";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -24,9 +21,11 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
+const storage = getStorage(app);
 
 const details = {
   firstName: "John",
@@ -50,28 +49,23 @@ function Profile({ navigation }) {
 
   useEffect(() => {
     // Pull user's data on page load
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .get()
-      .then((doc) => setUser(doc.data()));
-  }, []);
+    const userDocRef = doc(firestore, "users", value.userData.id);
+    getDoc(userDocRef).then((doc) => setUser(doc.data()));
+  }, [value.userData.id]);
+
   const chooseFile = async () => {
     let result = await DocumentPicker.getDocumentAsync({});
-    // alert(result.uri);
-    console.log(result);
+    if (result.type === "success") {
+      const storageRef = ref(storage, `photos/${value.userData.id}`);
+      const file = await fetch(result.uri);
+      const blob = await file.blob();
 
-    firebase
-      .storage()
-      .ref(`photos/${value.userData.id}`)
-      .put(result.name)
-      .then((snapshot) => {
+      uploadBytes(storageRef, blob).then((snapshot) => {
         console.log("Uploaded a blob or file!");
       });
+    }
   };
 
-  console.log(user);
   return (
     <View>
       <ScrollView>

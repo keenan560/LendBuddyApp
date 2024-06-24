@@ -1,25 +1,13 @@
 import React, { useState, useEffect, useContext } from "react";
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-  Alert,
-  Modal,
-  TouchableHighlight,
-} from "react-native";
-import { Text, Button, Input } from "react-native-elements";
-import Icon from "react-native-vector-icons/FontAwesome";
-import Debt from "./Debt";
+import { View, ScrollView, StyleSheet } from "react-native";
+import { Text } from "react-native-elements";
 import UserContext from "./context/userContext";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, doc, collection, onSnapshot } from "firebase/firestore";
+import Debt from "./Debt";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-//import "firebase/functions";
-//import "firebase/storage";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -31,40 +19,39 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function PayDebt({ navigation }) {
   const value = useContext(UserContext);
-  const [user, setUser] = useState(null);
   const [debts, setDebts] = useState([]);
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("debts")
-      .onSnapshot((snapshot) =>
-        setDebts(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        )
+    const debtsCollectionRef = collection(
+      doc(firestore, "users", value.userData.id),
+      "debts"
+    );
+    const unsubscribe = onSnapshot(debtsCollectionRef, (snapshot) => {
+      setDebts(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }))
       );
-  }, []);
+    });
+    return () => unsubscribe();
+  }, [value.userData.id]);
 
   const totalDebt = (debts) => {
     let total = 0;
     for (let i = 0; i < debts.length; i++) {
       total += parseFloat(debts[i].data.amountOwed);
     }
-
     return total;
   };
-  console.log(debts);
+
   return (
     <View style={styles.container}>
       <Text h4>
@@ -74,9 +61,8 @@ function PayDebt({ navigation }) {
       <ScrollView>
         {debts.length ? (
           debts.map(({ id, data }) => (
-            <View>
+            <View key={id}>
               <Debt
-                key={id}
                 id={id}
                 lenderID={data.lenderID}
                 lender={data.lenderFirstName}
@@ -103,43 +89,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flex: 1,
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 22,
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    width: 375,
-  },
-  openButton: {
-    backgroundColor: "#F194FF",
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2,
-  },
-  textStyle: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center",
   },
 });
 

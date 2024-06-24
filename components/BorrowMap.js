@@ -1,23 +1,29 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { StyleSheet, Text, View, Image, Alert } from "react-native";
-import MapView, { Callout, Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import CurrentLocationButton from "./CurrentLocationButton";
-import { Rating, Button, Overlay } from "react-native-elements";
-import MakeItRain from "react-native-make-it-rain";
+import { Button, Overlay } from "react-native-elements";
 import UserContext from "./context/userContext";
 import { SpotRequestContext } from "../App";
 import { FontAwesome } from "@expo/vector-icons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import {
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  onSnapshot,
+  serverTimestamp,
+  updateDoc,
+  deleteDoc,
+  setDoc,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import ConfettiCannon from "react-native-confetti-cannon";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-//import "firebase/functions";
-//import "firebase/storage";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -29,15 +35,15 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 export default function BorrowMap({ navigation }) {
   const value = useContext(UserContext);
   const requestContext = useContext(SpotRequestContext);
   const [lenders, setLenders] = useState([]);
-  const [requestResults, setRequestResults] = useState([]);
   const [location, setLocation] = useState({
     coords: {
       latitude: 36.15596,
@@ -47,22 +53,24 @@ export default function BorrowMap({ navigation }) {
     },
   });
   const [errorMsg, setErrorMsg] = useState(null);
-  const [docId, setDocId] = useState("");
   const [user, setUser] = useState(null);
+  const [visible, setVisible] = useState(false);
+  const [approved, setApproved] = useState(false);
+  const [denied, setDenied] = useState(false);
+
+  const mapView = useRef(null);
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .onSnapshot((snapshot) => {
-        setUser(snapshot.data());
-      });
-  }, []);
+    const userDocRef = doc(firestore, "users", value.userData.id);
+    const unsubscribe = onSnapshot(userDocRef, (snapshot) => {
+      setUser(snapshot.data());
+    });
+    return () => unsubscribe();
+  }, [value.userData.id]);
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestPermissionsAsync();
+      let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         setErrorMsg("Permission to access location was denied");
         return;
@@ -70,8 +78,7 @@ export default function BorrowMap({ navigation }) {
 
       let location = await Location.getCurrentPositionAsync({});
       setLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+        ...location.coords,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
       });
@@ -80,53 +87,39 @@ export default function BorrowMap({ navigation }) {
   }, []);
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("results")
-      .onSnapshot((snapshot) => {
-        setRequestResults(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        );
-      });
-  }, []);
-  useEffect(() => {
-    if (requestResults.length > 0) {
-      console.log(requestResults.length);
+    const resultsCollectionRef = collection(
+      firestore,
+      "users",
+      value.userData.id,
+      "results"
+    );
+    const unsubscribe = onSnapshot(resultsCollectionRef, (snapshot) => {
+      const requestResults = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        data: doc.data(),
+      }));
       requestResults.forEach(({ id, data }) => {
         decisionMaker(id, data);
       });
-    }
-  }, [requestResults]);
+    });
+    return () => unsubscribe();
+  }, [value.userData.id]);
 
-  let text = "Waiting..";
-  if (errorMsg) {
-    text = errorMsg;
-  } else if (location) {
-    text = JSON.stringify(location);
-  }
-
-  // console.log(lenders);
-  // console.log(requestContext.requestState);
-  const centerMap = () => {
-    const { latitude, longitude, latitudeDelta, longitudeDelta } = location;
-    mapView.current.animateToRegion({
-      latitude,
-      longitude,
-      latitudeDelta,
-      longitudeDelta,
+  const getLenders = () => {
+    const usersCollectionRef = collection(firestore, "users");
+    onSnapshot(usersCollectionRef, (snapshot) => {
+      setLenders(
+        snapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+          .filter((lender) => lender.data.activeLender)
+      );
     });
   };
 
-  const mapView = React.createRef();
-
   const demoRequest = (id) => {
-    // event.preventDefault();
-
     Alert.alert(
       "Request",
       "Ask this lender to spot you?",
@@ -140,23 +133,17 @@ export default function BorrowMap({ navigation }) {
           text: "Yes",
           onPress: async () => {
             toggleOverlay();
-            // Send to lender
-            await firebase
-              .firestore()
-              .collection("users")
-              .doc(`${id}`)
-              .collection("requests")
-              .add({
-                firstName: value.userData.firstName,
-                lastName: value.userData.lastName,
-                borrowerID: value.userData.id,
-                city: value.userData.city,
-                state: value.userData.state,
-                requestAmount: requestContext.requestState.amount,
-                category: requestContext.requestState.category,
-                decision: "pending",
-                timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
-              })
+            await addDoc(collection(firestore, "users", id, "requests"), {
+              firstName: value.userData.firstName,
+              lastName: value.userData.lastName,
+              borrowerID: value.userData.id,
+              city: value.userData.city,
+              state: value.userData.state,
+              requestAmount: requestContext.requestState.amount,
+              category: requestContext.requestState.category,
+              decision: "pending",
+              timeStamp: serverTimestamp(),
+            })
               .then((docRef) => {
                 addToResults(docRef.id);
               })
@@ -168,119 +155,67 @@ export default function BorrowMap({ navigation }) {
     );
   };
 
-  const [visible, setVisible] = useState(false);
-  const toggleOverlay = () => {
-    setVisible(!visible);
-  };
-
-  const [approved, setApproved] = useState(false);
-  const toggleApproved = () => {
-    setApproved(!approved);
-  };
-
-  const [denied, setDenied] = useState(false);
-  const toggleDenied = () => {
-    if (visible) {
-      setVisible(false);
-    }
-    setDenied(!denied);
-  };
-
-  const finished = () => {
-    toggleApproved();
-    navigation.navigate("Dashboard");
-  };
-
-  const getLenders = () => {
-    firebase
-      .firestore()
-      .collection("users")
-      .where("activeLender", "==", true)
-      .onSnapshot((snapshot) => {
-        setLenders(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        );
-      });
-  };
-
   const addToResults = (id) => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("results")
-      .doc(`${id}`)
-      .set({
-        firstName: value.userData.firstName,
-        lastName: value.userData.lastName,
-        borrowerID: value.userData.id,
-        city: value.userData.city,
-        state: value.userData.state,
-        requestAmount: requestContext.requestState.amount,
-        category: requestContext.requestState.category,
-        decision: "pending",
-        timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
-      })
-      .catch((error) => alert(error.message));
+    setDoc(doc(firestore, "users", value.userData.id, "results", id), {
+      firstName: value.userData.firstName,
+      lastName: value.userData.lastName,
+      borrowerID: value.userData.id,
+      city: value.userData.city,
+      state: value.userData.state,
+      requestAmount: requestContext.requestState.amount,
+      category: requestContext.requestState.category,
+      decision: "pending",
+      timeStamp: serverTimestamp(),
+    }).catch((error) => alert(error.message));
   };
 
   const decisionMaker = (id, data) => {
     switch (data.decision) {
       case "denied":
-        firebase
-          .firestore()
-          .collection("users")
-          .doc(`${value.userData.id}`)
-          .collection("results")
-          .doc(`${id}`)
-          .delete()
-          .then(() => {
-            console.log("Document successfully deleted!");
-          })
-          .catch((error) => {
-            console.error("Error removing document: ", error);
-          });
-
+        deleteDoc(doc(firestore, "users", value.userData.id, "results", id))
+          .then(() => console.log("Document successfully deleted!"))
+          .catch((error) => console.error("Error removing document: ", error));
         setVisible(false);
         setDenied(true);
-        setTimeout(() => {
-          setDenied(false);
-        }, 3000);
+        setTimeout(() => setDenied(false), 3000);
         break;
       case "approved":
         setVisible(false);
-        setApproved(!approved);
-        firebase
-          .firestore()
-          .collection("users")
-          .doc(`${value.userData.id}`)
-          .update({
-            totalDebt: user.totalDebt + data.requestAmount,
-          })
+        setApproved(true);
+        updateDoc(doc(firestore, "users", value.userData.id), {
+          totalDebt: user
+            ? user.totalDebt + data.requestAmount
+            : data.requestAmount,
+        })
           .catch((errorMsg) => console.log(errorMsg.message))
           .then(() => {
-            firebase
-              .firestore()
-              .collection("users")
-              .doc(`${value.userData.id}`)
-              .collection("results")
-              .doc(`${id}`)
-              .delete();
+            deleteDoc(
+              doc(firestore, "users", value.userData.id, "results", id)
+            );
           });
         break;
-      // case "timedOut":
-      //   setVisible(false);
-      //   setDenied(true);
-      //   setTimeout(() => {
-      //     setDenied(false);
-      //   }, 3000);
-      //   break;
+      default:
+        break;
     }
   };
-  console.log("total debt is " + value.userData.totalDebt);
+
+  const toggleOverlay = () => setVisible(!visible);
+  const toggleApproved = () => setApproved(!approved);
+  const toggleDenied = () => setDenied(!denied);
+  const finished = () => {
+    toggleApproved();
+    navigation.navigate("Dashboard");
+  };
+
+  const centerMap = () => {
+    const { latitude, longitude, latitudeDelta, longitudeDelta } = location;
+    mapView.current.animateToRegion({
+      latitude,
+      longitude,
+      latitudeDelta,
+      longitudeDelta,
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -297,7 +232,6 @@ export default function BorrowMap({ navigation }) {
           size={24}
           color="black"
         />
-        {/* <Button loading type="clear" /> */}
       </Overlay>
       <Overlay
         style={{
@@ -310,7 +244,7 @@ export default function BorrowMap({ navigation }) {
         isVisible={denied}
       >
         <Text style={{ width: "100%", fontSize: 18 }}>
-          Sorry the lender cannot spot you.
+          Sorry, the lender cannot spot you.
         </Text>
         <FontAwesome
           style={{ textAlign: "center" }}
@@ -326,12 +260,11 @@ export default function BorrowMap({ navigation }) {
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          <MakeItRain
-            numItems={80}
-            itemDimensions={{ width: 40, height: 20 }}
-            itemComponent={<Text>🤍</Text>}
-            itemTintStrength={0.8}
-            continuous={false}
+          <ConfettiCannon
+            count={200}
+            origin={{ x: -10, y: 0 }}
+            fadeOut
+            fallSpeed={4000}
           />
           <Text style={{ fontSize: 30, marginBottom: 20 }}>
             Congratulations! You have been{" "}
@@ -344,14 +277,7 @@ export default function BorrowMap({ navigation }) {
             buttonStyle={{ borderRadius: 5 }}
             onPress={finished}
           />
-          <Text>Funds will be deposited in 1-2 business days.</Text>
-
-          {/* <ConfettiCannon
-            fadeOut
-            autoStart
-            count={200}
-            origin={{ x: -10, y: 0 }}
-          /> */}
+          <Text>Funds will be deposited shortly.</Text>
         </View>
       </Overlay>
       <View style={{ backgroundColor: "#ffff", padding: 10 }}>
@@ -361,11 +287,10 @@ export default function BorrowMap({ navigation }) {
           {requestContext.requestState.category}...
         </Text>
       </View>
-
       <CurrentLocationButton cb={centerMap} />
       {location ? (
         <MapView
-          provider={PROVIDER_GOOGLE}
+          // provider={PROVIDER_GOOGLE}
           style={styles.map}
           showsCompass
           showsUserLocation={true}
@@ -384,7 +309,7 @@ export default function BorrowMap({ navigation }) {
                 coordinate={data.coordinates}
                 title={data.firstName}
                 style={{ alignItems: "center" }}
-                onPress={(e) => demoRequest(id)}
+                onPress={() => demoRequest(id)}
               >
                 <Image
                   source={require("../assets/moneybag.jpg")}
@@ -406,7 +331,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-
   map: {
     flex: 1,
     height: "100%",

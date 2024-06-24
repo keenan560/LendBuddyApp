@@ -1,21 +1,16 @@
 import React, { useEffect, useContext, useState } from "react";
-import { StyleSheet, Text, View, Animated } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
-import { MaterialIcons } from "@expo/vector-icons";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { FontAwesome } from "@expo/vector-icons";
-import { AntDesign } from "@expo/vector-icons";
+import { StyleSheet, Text, View, ScrollView } from "react-native";
+import {
+  MaterialIcons,
+  MaterialCommunityIcons,
+  FontAwesome,
+} from "@expo/vector-icons";
 import UserContext from "./context/userContext";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, doc, updateDoc, onSnapshot } from "firebase/firestore";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-
-//import "firebase/functions";
-//import "firebase/storage";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -27,41 +22,43 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function BorrowerDash({ navigation }) {
   const value = useContext(UserContext);
   const [user, setUser] = useState({});
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .update({
+    const updateUser = async () => {
+      const userDocRef = doc(firestore, "users", value.userData.id);
+      await updateDoc(userDocRef, {
         activeLender: false,
       });
-  }, []);
+    };
+
+    updateUser();
+  }, [value.userData.id]);
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .onSnapshot((snapshot) => {
-        setUser(snapshot.data());
-      });
-  }, []);
-  console.log(user.totalDebt);
+    const userDocRef = doc(firestore, "users", value.userData.id);
+    const unsubscribe = onSnapshot(userDocRef, (snapshot) => {
+      setUser(snapshot.data());
+    });
+    return () => unsubscribe();
+  }, [value.userData.id]);
+
+  console.log('', user )
+
   return (
     <ScrollView>
       <View style={styles.container}>
         <View style={styles.row}>
           <View style={styles.iconSpace}>
             <MaterialIcons
-              name="shopping-cart"
+              name="shopping-bag"
               size={60}
               color="#28a745"
               onPress={() =>
@@ -272,7 +269,6 @@ const styles = StyleSheet.create({
   iconSpace: {
     marginLeft: 10,
     marginRight: 10,
-
     padding: 5,
   },
 

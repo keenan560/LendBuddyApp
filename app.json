@@ -18,7 +18,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "usesIcloudStorage": true
+      "usesIcloudStorage": true,
+      "config" : {
+        "googleMapsApiKey": "AIzaSyAjr_BokCbTckWuSxRdEXFIAqijmyvm-O4"
+      }
     },
     "android": {
       "adaptiveIcon": {

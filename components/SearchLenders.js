@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import { SearchBar, Text } from "react-native-elements";
 import Lender from "./Lender";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, collection, onSnapshot } from "firebase/firestore";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-import "firebase/firestore";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -19,27 +18,31 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
+
 function SearchLenders({ navigation }) {
   const [search, setSearch] = useState("");
-  const [loading, SetLoading] = useState(false);
   const [lenders, setLenders] = useState([]);
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .onSnapshot((snapshot) => {
-        setLenders(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        );
-      });
+    const usersCollectionRef = collection(firestore, "users");
+    const unsubscribe = onSnapshot(usersCollectionRef, (snapshot) => {
+      setLenders(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }))
+      );
+    });
+    return () => unsubscribe();
   }, []);
+
+  const filteredLenders = lenders.filter(({ data }) =>
+    data.state.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <View style={styles.container}>
@@ -47,17 +50,15 @@ function SearchLenders({ navigation }) {
         round
         lightTheme
         placeholder="Enter State i.e. TN"
-        onChangeText={(text) => {
-          setSearch(text), setLenders(searchLenders);
-        }}
+        onChangeText={(text) => setSearch(text)}
         value={search}
         containerStyle={{ backgroundColor: "#fff" }}
         inputContainerStyle={{ backgroundColor: "#fff" }}
       />
 
       <ScrollView>
-        {lenders ? (
-          lenders.map(({ id, data }) => (
+        {filteredLenders.length > 0 ? (
+          filteredLenders.map(({ id, data }) => (
             <Lender
               key={id}
               name={data.firstName}

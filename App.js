@@ -23,12 +23,11 @@ import Earnings from "./components/Earnings";
 import Discounts from "./components/Discounts";
 import SearchLenders from "./components/SearchLenders";
 import UserContext from "./components/context/userContext";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, collection, doc, getDoc } from "firebase/firestore";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-import "firebase/firestore";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -40,9 +39,10 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 const Stack = createStackNavigator();
 
@@ -53,7 +53,6 @@ const requestReducer = (state, action) => {
   switch (action.type) {
     case "request":
       return action.payload;
-
     default:
       return initialRequest;
   }
@@ -77,25 +76,15 @@ export default function App() {
     setUser(null);
   };
 
-  const getUserData = (appUser) => {
+  const getUserData = async (appUser) => {
     if (appUser) {
-      firebase
-        .firestore()
-        .collection("users")
-        .doc(`${appUser}`)
-        .get()
-        .then((doc) => {
-          if (doc.exists) {
-            console.log("Document data:", doc.data());
-            setUserData(doc.data());
-          } else {
-            // doc.data() will be undefined in this case
-            console.log("No such document!");
-          }
-        })
-        .catch((error) => {
-          console.log("Error getting document:", error);
-        });
+      const userDoc = await getDoc(doc(firestore, "users", appUser));
+      if (userDoc.exists()) {
+        console.log("Document data:", userDoc.data());
+        setUserData(userDoc.data());
+      } else {
+        console.log("No such document!");
+      }
     }
   };
 
@@ -130,13 +119,11 @@ export default function App() {
               component={Join}
               options={{ title: "Register" }}
             />
-
             <Stack.Screen
               name="Dashboard"
               component={Dashboard}
               options={{ title: "Dashboard" }}
             />
-
             <Stack.Screen
               name="Spot Request"
               component={SpotRequest}

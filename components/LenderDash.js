@@ -2,19 +2,21 @@ import React, { useState, useEffect, useContext } from "react";
 import { Text } from "react-native-elements";
 import { StyleSheet, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { MaterialIcons } from "@expo/vector-icons";
-import { FontAwesome } from "@expo/vector-icons";
+import { MaterialIcons, FontAwesome } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import UserContext from "./context/userContext";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  collection,
+  onSnapshot,
+} from "firebase/firestore";
 import LoanRequest from "./LoanRequest";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-//import "firebase/functions";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -26,9 +28,10 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function LenderDash({ navigation }) {
   const [active, setActive] = useState(false);
@@ -41,63 +44,54 @@ function LenderDash({ navigation }) {
 
   useEffect(() => {
     if (active) {
-      firebase
-        .firestore()
-        .collection("users")
-        .doc(`${value.userData.id}`)
-        .collection("requests")
-        .onSnapshot((snapshot) => {
-          setRequests(
-            snapshot.docs.map((doc) => ({
-              id: doc.id,
-              data: doc.data(),
-            }))
-          );
-        });
+      const requestsCollectionRef = collection(
+        doc(firestore, "users", value.userData.id),
+        "requests"
+      );
+      const unsubscribe = onSnapshot(requestsCollectionRef, (snapshot) => {
+        setRequests(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          }))
+        );
+      });
+      return () => unsubscribe();
     }
-  }, [active]);
+  }, [active, value.userData.id]);
 
   const toggleActive = () => {
     setActive(!active);
   };
+
   const toggleOverlay = () => {
     setVisible(!visible);
   };
 
   const getCoords = async () => {
     setActive(true);
-    await firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .update({
-        activeLender: true,
-      });
+    const userDocRef = doc(firestore, "users", value.userData.id);
+    await updateDoc(userDocRef, {
+      activeLender: true,
+    });
 
     let location = await Location.getCurrentPositionAsync({});
     setLocation(location);
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .update({
-        activeLender: true,
-        coordinates: {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        },
-      });
+    await updateDoc(userDocRef, {
+      activeLender: true,
+      coordinates: {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      },
+    });
   };
 
-  const goOffline = () => {
+  const goOffline = async () => {
     setActive(false);
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .update({
-        activeLender: false,
-      });
+    const userDocRef = doc(firestore, "users", value.userData.id);
+    await updateDoc(userDocRef, {
+      activeLender: false,
+    });
   };
 
   console.log(requests.length);
@@ -194,7 +188,16 @@ function LenderDash({ navigation }) {
             <Text style={styles.iconText}>Profile</Text>
           </View>
           <View style={styles.iconSpace}>
-            <MaterialIcons name="payment" size={60} color="#3D5F9C" />
+            <MaterialIcons
+              name="payment"
+              size={60}
+              color="#3D5F9C"
+              onPress={() =>
+                navigation.navigate("Borrower Card Info", {
+                  name: "Borrower Card Info",
+                })
+              }
+            />
             <Text style={styles.iconText}>Card Info</Text>
           </View>
           <View style={styles.iconSpace}>
@@ -215,12 +218,6 @@ function LenderDash({ navigation }) {
             />
             <Text style={styles.iconText}>Block</Text>
           </View>
-        </View>
-        <View style={styles.row}>
-          {/* <View style={styles.iconSpace}>
-            <MaterialIcons name="report" size={60} color="#3D5F9C" />
-            <Text style={styles.iconText}>Report</Text>
-          </View> */}
         </View>
         <View style={styles.row}></View>
         {active && (

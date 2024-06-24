@@ -5,18 +5,17 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-import { ScrollView } from "react-native-gesture-handler";
-import { set } from "react-native-reanimated";
-//import "firebase/functions";
-//import "firebase/storage";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -28,9 +27,10 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function Join({ navigation }) {
   const [firstName, setFirstName] = useState("");
@@ -45,47 +45,40 @@ function Join({ navigation }) {
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
 
-  const signUp = (event) => {
+  const signUp = async (event) => {
     event.preventDefault();
-    firebase
-      .auth()
-      .createUserWithEmailAndPassword(email, password)
-      .then((authUser) => {
-        authUser.user.updateProfile({
-          email: authUser.user.email,
-          firstName: firstName,
-          lastName: lastName,
-          dob: dob,
-          mobile: mobile,
-        });
-
-        firebase
-          .firestore()
-          .collection("users")
-          .doc(`${authUser.user.uid}`)
-          .set({
-            id: authUser.user.uid,
-            email: authUser.user.email,
-            firstName: firstName,
-            lastName: lastName,
-            dob: dob,
-            mobile: mobile,
-            totalDebt: 0,
-            totalLent: 0,
-            paystub1: false,
-            paystub2: false,
-            activeLender: false,
-            street1: street1,
-            street2: street2,
-            city: city,
-            state: state,
-            zipCode: zip,
-          })
-          .catch((error) => alert(error.message));
-        alert("Please Login" + authUser.user.firstName);
-        navigation.navigate("Login");
-      })
-      .catch((error) => alert(error.message));
+    try {
+      const authUser = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      await updateProfile(authUser.user, {
+        displayName: `${firstName} ${lastName}`,
+      });
+      await setDoc(doc(firestore, "users", authUser.user.uid), {
+        id: authUser.user.uid,
+        email: authUser.user.email,
+        firstName: firstName,
+        lastName: lastName,
+        dob: dob,
+        mobile: mobile,
+        totalDebt: 0,
+        totalLent: 0,
+        paystub1: false,
+        paystub2: false,
+        activeLender: false,
+        street1: street1,
+        street2: street2,
+        city: city,
+        state: state,
+        zipCode: zip,
+      });
+      alert("Please Login, " + firstName);
+      navigation.navigate("Login");
+    } catch (error) {
+      alert(error.message);
+    }
     setFirstName("");
     setLastName("");
     setEmail("");
@@ -219,11 +212,9 @@ const styles = StyleSheet.create({
     marginTop: 120,
     textAlign: "center",
   },
-
   lendColor: {
     color: "#28a745",
   },
-
   slogan: {
     color: "#28a745",
     bottom: 53,
@@ -231,7 +222,6 @@ const styles = StyleSheet.create({
     fontWeight: "normal",
     textAlign: "center",
   },
-
   input: {
     width: 375,
     fontSize: 20,
@@ -241,11 +231,9 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     height: 50,
     borderWidth: 0.5,
-    borderTopColor: "gray",
-    borderBottomColor: "gray",
-    borderRightColor: "gray",
-    borderLeftColor: "gray",
+    borderColor: "gray",
     borderRadius: 5,
+    color: "#000",
   },
   button: {
     alignItems: "center",
@@ -260,23 +248,19 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     marginRight: 10,
   },
-
   buttonText: {
     color: "white",
     fontWeight: "bold",
   },
-
   row: {
     flexDirection: "row",
     alignItems: "center",
   },
-
   left: {
     marginLeft: 0,
     marginRight: 150,
     color: "gray",
   },
-
   right: {
     marginRight: 0,
     color: "gray",

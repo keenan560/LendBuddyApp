@@ -2,16 +2,12 @@ import React, { useState, useEffect, useContext } from "react";
 import { View, StyleSheet, ScrollView, Text } from "react-native";
 import { SearchBar } from "react-native-elements";
 import Activity from "./Activity.js";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, collection, doc, onSnapshot } from "firebase/firestore";
 import UserContext from "./context/userContext";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-//import "firebase/functions";
-//import "firebase/storage";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -23,31 +19,31 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function borrowerActivity({ navigation }) {
   const value = useContext(UserContext);
   const [search, setSearch] = useState("");
-  const [id, setId] = useState([]);
   const [activities, setActivities] = useState([]);
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("borrowActivities")
-      .onSnapshot((snapshot) =>
-        setActivities(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        )
-      );
-  }, []);
+    const borrowActivitiesCollectionRef = collection(
+      doc(firestore, "users", value.userData.id),
+      "borrowActivities"
+    );
+    const unsubscribe = onSnapshot(borrowActivitiesCollectionRef, (snapshot) =>
+      setActivities(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }))
+      )
+    );
+    return () => unsubscribe();
+  }, [value.userData.id]);
 
   return (
     <View style={styles.container}>
@@ -79,6 +75,7 @@ function borrowerActivity({ navigation }) {
     </View>
   );
 }
+
 export default borrowerActivity;
 
 const styles = StyleSheet.create({

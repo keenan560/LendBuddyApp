@@ -1,19 +1,16 @@
-import React, { useEffect, useContext } from "react";
+import React, { useEffect, useContext, useState } from "react";
 import { StyleSheet, Text, View, Switch, Alert } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Avatar } from "react-native-elements";
-import { useState } from "react";
-import BorrowerDash from "./BorrowerDash";
-import LenderDash from "./LenderDash";
 import { AntDesign } from "@expo/vector-icons";
 import UserContext from "./context/userContext";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth, signOut } from "firebase/auth";
+import { getFirestore, doc, onSnapshot } from "firebase/firestore";
+import BorrowerDash from "./BorrowerDash";
+import LenderDash from "./LenderDash";
 
-import * as firebase from "firebase";
-
-// Optionally import the services that you want to use
-import "firebase/auth";
-import "firebase/firestore";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -25,9 +22,10 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function Dashboard({ navigation }) {
   const value = useContext(UserContext);
@@ -39,14 +37,12 @@ function Dashboard({ navigation }) {
   console.log(value.userData.totalDebt);
 
   useEffect(() => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .onSnapshot((snapshot) => {
-        setUser(snapshot.data());
-      });
-  }, []);
+    const userDocRef = doc(firestore, "users", value.userData.id);
+    const unsubscribe = onSnapshot(userDocRef, (snapshot) => {
+      setUser(snapshot.data());
+    });
+    return () => unsubscribe();
+  }, [value.userData.id]);
 
   const logOut = () =>
     Alert.alert(
@@ -61,7 +57,7 @@ function Dashboard({ navigation }) {
         {
           text: "Yes",
           onPress: () => {
-            firebase.auth().signOut();
+            signOut(auth);
             navigation.navigate("Login", { name: "Login" });
           },
         },
@@ -80,7 +76,6 @@ function Dashboard({ navigation }) {
               rounded
               title={user ? `${user.firstName[0] + user.lastName[0]}` : ".."}
               source={{
-                // uri: user ? `${user.firstName[0] + user.lastName[0]}` : "..",
                 uri: "https://i.pinimg.com/originals/77/a7/a1/77a7a150b7752ae3bf8a73c58d490881.png",
               }}
               onPress={logOut}

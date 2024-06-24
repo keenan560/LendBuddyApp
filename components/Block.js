@@ -4,15 +4,20 @@ import { SearchBar, Overlay } from "react-native-elements";
 import { ScrollView } from "react-native-gesture-handler";
 import { ListItem, Avatar, Button } from "react-native-elements";
 import UserContext from "./context/userContext";
-import * as firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import {
+  getFirestore,
+  collection,
+  doc,
+  onSnapshot,
+  query,
+  where,
+  setDoc,
+  deleteDoc,
+} from "firebase/firestore";
 
-// Optionally import the services that you want to use
-import "firebase/auth";
-// import "firebase/database";
-import "firebase/firestore";
-//import "firebase/functions";
-//import "firebase/storage";
-
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
   authDomain: "lend-buddy.firebaseapp.com",
@@ -24,9 +29,10 @@ const firebaseConfig = {
   measurementId: "G-H054QF3GX3",
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
 
 function Block({ navigation }) {
   const [search, setSearch] = useState("");
@@ -35,93 +41,84 @@ function Block({ navigation }) {
   const [visible, setVisible] = useState(false);
   const [results, setResults] = useState([]);
   const [filter, setFilter] = useState([]);
+
   useEffect(() => {
     // on loading pull all blocked users
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("blockList")
-      .onSnapshot((snapshot) =>
-        setList(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        )
-      );
-
-      
-  }, []);
+    const blockListCollectionRef = collection(
+      doc(firestore, "users", value.userData.id),
+      "blockList"
+    );
+    const unsubscribe = onSnapshot(blockListCollectionRef, (snapshot) =>
+      setList(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }))
+      )
+    );
+    return () => unsubscribe();
+  }, [value.userData.id]);
 
   useEffect(() => {
     // on loading pull all users
-    firebase
-      .firestore()
-      .collection("users")
-      .onSnapshot((snapshot) =>
-        setFilter(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        )
-      );
-      
-
+    const usersCollectionRef = collection(firestore, "users");
+    const unsubscribe = onSnapshot(usersCollectionRef, (snapshot) =>
+      setFilter(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }))
+      )
+    );
+    return () => unsubscribe();
   }, []);
 
   const toggleOverlay = () => {
     setVisible(!visible);
   };
+
   const findUsers = async () => {
-    await firebase
-      .firestore()
-      .collection("users")
-      .where("firstName", "array-contains", `${search}`)
-      .onSnapshot((snapshot) =>
-        setResults(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        )
-      );
+    const usersQuery = query(
+      collection(firestore, "users"),
+      where("firstName", "array-contains", search)
+    );
+    const unsubscribe = onSnapshot(usersQuery, (snapshot) =>
+      setResults(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }))
+      )
+    );
     toggleOverlay();
   };
 
   const blockUser = async (id, data) => {
-    await firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("blockList")
-      .doc(`${id}`)
-      .set({
-        id: id,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        city: data.city,
-        state: data.state,
-      });
-
-    return filter.splice(id, 1);
+    const blockListDocRef = doc(
+      collection(doc(firestore, "users", value.userData.id), "blockList"),
+      id
+    );
+    await setDoc(blockListDocRef, {
+      id: id,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      city: data.city,
+      state: data.state,
+    });
+    setFilter(filter.filter((user) => user.id !== id));
   };
 
   const unBlockUser = (id, data) => {
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("blockList")
-      .doc(`${id}`)
-      .delete()
+    const blockListDocRef = doc(
+      collection(doc(firestore, "users", value.userData.id), "blockList"),
+      id
+    );
+    deleteDoc(blockListDocRef)
       .then(() => alert(data.firstName + " is unblocked."))
       .catch((error) => alert(error.message));
   };
 
-  console.log(filter);
   return (
     <View style={styles.container}>
       <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
@@ -134,24 +131,25 @@ function Block({ navigation }) {
             {filter.length > 0 ? (
               filter
                 .filter((user) => {
-                  if (search == "") {
+                  if (search === "") {
                     return user;
                   }
 
                   if (
                     user.data.firstName
                       .toLowerCase()
-                      .includes(search.toLocaleLowerCase())
+                      .includes(search.toLowerCase())
                   ) {
                     return user;
                   }
                   if (
                     user.data.lastName
                       .toLowerCase()
-                      .includes(search.toLocaleLowerCase())
+                      .includes(search.toLowerCase())
                   ) {
                     return user;
                   }
+                  return null;
                 })
                 .map(({ id, data }) => (
                   <ListItem bottomDivider key={id}>

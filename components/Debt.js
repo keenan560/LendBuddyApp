@@ -1,17 +1,25 @@
 import React, { useState, useEffect, useContext } from "react";
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from "react-native";
-import { Avatar, Button } from "react-native-elements";
-import { MaterialIcons } from "@expo/vector-icons";
+import { View, Text, Alert, StyleSheet } from "react-native";
 import { PricingCard } from "react-native-elements";
 import UserContext from "./context/userContext";
-import firebase from "firebase";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, doc, onSnapshot, updateDoc } from "firebase/firestore";
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAqmWfVvcJykYnjsBdfKzmfquz3C_OffXY",
+  authDomain: "lend-buddy.firebaseapp.com",
+  databaseURL: "https://lend-buddy.firebaseio.com",
+  projectId: "lend-buddy",
+  storageBucket: "lend-buddy.appspot.com",
+  messagingSenderId: "986357455581",
+  appId: "1:986357455581:web:aa2198f5634b08a6731934",
+  measurementId: "G-H054QF3GX3",
+};
+
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const firestore = getFirestore(app);
 
 function Debt({
   id,
@@ -31,16 +39,12 @@ function Debt({
 
   useEffect(() => {
     // get current balance of debt
-    firebase
-      .firestore()
-      .collection("users")
-      .doc(`${value.userData.id}`)
-      .collection("debts")
-      .doc(`${id}`)
-      .onSnapshot((snapshot) => {
-        setCurrentBal(snapshot.data());
-      });
-  }, []);
+    const debtDocRef = doc(firestore, "users", value.userData.id, "debts", id);
+    const unsubscribe = onSnapshot(debtDocRef, (snapshot) => {
+      setCurrentBal(snapshot.data());
+    });
+    return () => unsubscribe();
+  }, [value.userData.id, id]);
 
   const requestExt = () => {};
   const makePayment = () => {
@@ -55,38 +59,41 @@ function Debt({
         },
         {
           text: "Yes",
-          onPress: () => {
-            // apply payment to debt in lender's collection
-            firebase
-              .firestore()
-              .collection("users")
-              .doc(`${lenderID}`)
-              .collection("debtors")
-              .doc(`${id}`)
-              .update({
+          onPress: async () => {
+            try {
+              // apply payment to debt in lender's collection
+              const lenderDebtDocRef = doc(
+                firestore,
+                "users",
+                lenderID,
+                "debtors",
+                id
+              );
+              await updateDoc(lenderDebtDocRef, {
                 balance: currentBal.balance - amountOwed,
                 amountOwed: amountOwed,
-              })
-              .then(() => {
-                // apply payment to borrower's balance.
-                firebase
-                  .firestore()
-                  .collection("users")
-                  .doc(`${value.userData.id}`)
-                  .collection("debts")
-                  .doc(`${id}`)
-                  .update({
-                    balance: currentBal.balance - amountOwed,
-                    amountOwed: amountOwed,
-                  });
-              })
-              .catch((error) => alert(error.message));
+              });
+
+              // apply payment to borrower's balance.
+              const borrowerDebtDocRef = doc(
+                firestore,
+                "users",
+                value.userData.id,
+                "debts",
+                id
+              );
+              await updateDoc(borrowerDebtDocRef, {
+                balance: currentBal.balance - amountOwed,
+                amountOwed: amountOwed,
+              });
+            } catch (error) {
+              alert(error.message);
+            }
           },
         },
       ],
       { cancelable: false }
     );
-    console.log(currentBal.balance);
   };
 
   return (
@@ -130,7 +137,6 @@ const styles = StyleSheet.create({
   avatarRow: {
     flexDirection: "row",
     alignItems: "center",
-
     marginBottom: 10,
     marginTop: 20,
   },
