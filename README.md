@@ -2,6 +2,7 @@
 
 ## Description
 An app created to allow borrowers connect with lenders.
+https://lend-buddy.web.app
 
 ## Architecture
 - Expo (React Native)
